@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 
 import { errorHandler } from './middleware/errorHandler';
+import filesRoutes from './routes/files.routes';
 import logger from './utils/logger';
 
 const app = express();
@@ -22,6 +23,8 @@ app.get('/health', (_req: Request, res: Response) => {
     message: 'API is healthy',
   });
 });
+
+app.use('/files', filesRoutes);
 
 app.use(errorHandler);
 

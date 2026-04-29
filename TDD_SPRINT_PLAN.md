@@ -368,7 +368,7 @@ Create or update:
 - [x] Sprint 1: Project Scaffold and Health Check
 - [x] Sprint 2: File Model, Constants, and Database Setup
 - [x] Sprint 3: Validation and Standard Error Handling
-- [ ] Sprint 4: Create File Records
+- [x] Sprint 4: Create File Records
 - [ ] Sprint 5: List Files with Moderation Filtering
 - [ ] Sprint 6: Update File Moderation Status
 - [ ] Sprint 7: Recommendation Keyword Engine
