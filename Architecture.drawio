@@ -1,0 +1,80 @@
+graph TD
+    %% Class Definitions
+    classDef frontend fill:#4B4B4B,stroke:#333,stroke-width:1px,color:#fff;
+    classDef entry fill:#3F3D89,stroke:#333,stroke-width:1px,color:#fff;
+    classDef valid fill:#004032,stroke:#333,stroke-width:1px,color:#fff;
+    classDef controller fill:#0B4F81,stroke:#333,stroke-width:1px,color:#fff;
+    classDef service fill:#7C4B13,stroke:#333,stroke-width:1px,color:#fff;
+    classDef external fill:#6A2B14,stroke:#333,stroke-width:1px,color:#fff;
+    classDef db fill:#064D3B,stroke:#333,stroke-width:1px,color:#fff;
+    classDef util fill:#4B4B4B,stroke:#333,stroke-width:1px,color:#fff;
+    classDef state fill:#4B4B4B,stroke:#333,stroke-width:1px,color:#fff;
+    classDef approved fill:#064D3B,stroke:#333,stroke-width:1px,color:#fff;
+    classDef rejected fill:#6A2B14,stroke:#333,stroke-width:1px,color:#fff;
+
+    %% Nodes
+    Frontend["Frontend (React + TypeScript)<br/>TanStack Router · Zustand · not your concern"]:::frontend
+    App["app.ts — Express application<br/>Morgan logging · body-parser · global error handler"]:::entry
+
+    subgraph Routing [" "]
+        AiRoutes["ai.routes.ts<br/>POST /ai/generate-post · recommend-media · suggest-hashtags"]:::entry
+        FileRoutes["files.routes.ts<br/>GET /files · POST /files · PATCH /files/:id/status"]:::entry
+    end
+
+    subgraph Validation [" "]
+        AiVal["validate.ts (zod)<br/>Reject weak / empty inputs → 400"]:::valid
+        FileVal["validate.ts (zod)<br/>Validate query params, body fields"]:::valid
+    end
+
+    subgraph Controllers [" "]
+        AiCtrl["ai.controller.ts<br/>Parses req · calls services · shapes response"]:::controller
+        FileCtrl["files.controller.ts<br/>Parses req · calls services · shapes response"]:::controller
+    end
+
+    subgraph Services [" "]
+        AiSvc["ai.service.ts<br/>Prompt builders<br/>Timeout wrapper · fallback"]:::service
+        RecSvc["recommendation.service.ts<br/>Keyword / semantic match<br/>Ranks approved files only"]:::service
+        FileSvc["files.service.ts<br/>Query by status / type<br/>Update moderation state"]:::service
+    end
+
+    subgraph Persistence [" "]
+        AiClient["aiClient.ts → OpenAI API<br/>generate-post · hashtags<br/>embed (bonus) · 15s timeout"]:::external
+        DB["MongoDB · Mongoose<br/>File documents · logs<br/>status-gated queries"]:::db
+    end
+
+    subgraph Utils ["Cross-cutting concerns"]
+        Logger["logger.ts (winston)<br/>All requests · AI calls<br/>Timeouts · filter events"]:::util
+        Error["errorHandler.ts<br/>Structured error shape<br/>VALIDATION · AI_TIMEOUT · DB_ERROR"]:::util
+        Const["constants.ts / types/<br/>FileStatus enum<br/>Shared TS interfaces"]:::util
+    end
+
+    subgraph States ["Moderation state machine"]
+        U_Init["upload_initiated<br/>not visible"]:::state
+        S_Prog["scan_in_progress<br/>not visible"]:::state
+        Approved["approved<br/>visible · eligible"]:::approved
+        Rejected["rejected<br/>hidden · blocked"]:::rejected
+    end
+
+    %% Connections
+    Frontend -- "HTTP REST" --> App
+    App -- "route dispatch" --> AiRoutes
+    App -- "route dispatch" --> FileRoutes
+
+    AiRoutes --> AiVal
+    FileRoutes --> FileVal
+
+    AiVal --> AiCtrl
+    FileVal --> FileCtrl
+    AiCtrl -.-> FileCtrl
+
+    AiCtrl --> AiSvc
+    AiSvc --> RecSvc
+    AiSvc --> AiClient
+    RecSvc --> AiClient
+    RecSvc --> DB
+    FileCtrl --> FileSvc
+    FileSvc --> DB
+
+    U_Init --> S_Prog
+    S_Prog --> Approved
+    S_Prog --> Rejected
