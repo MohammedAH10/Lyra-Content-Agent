@@ -366,7 +366,7 @@ Create or update:
 ## Sprint Tracking Checklist
 
 - [x] Sprint 1: Project Scaffold and Health Check
-- [ ] Sprint 2: File Model, Constants, and Database Setup
+- [x] Sprint 2: File Model, Constants, and Database Setup
 - [ ] Sprint 3: Validation and Standard Error Handling
 - [ ] Sprint 4: Create File Records
 - [ ] Sprint 5: List Files with Moderation Filtering
