@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 
+import { generatePost as generatePostService, suggestHashtags as suggestHashtagsService } from '../services/ai.service';
 import {
   MediaRecommendation,
   recommendMediaForPost,
@@ -43,6 +44,42 @@ export const recommendMedia: RequestHandler = async (req, res, next) => {
       data: {
         recommendations: result.recommendations.map(serializeRecommendation),
         totalMatched: result.totalMatched,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generatePost: RequestHandler = async (req, res, next) => {
+  try {
+    const { prompt, tone, variations } = req.body;
+
+    const result = await generatePostService(prompt, tone, variations);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        primary: result.primary,
+        variations: result.variations,
+        hashtags: result.hashtags,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const suggestHashtags: RequestHandler = async (req, res, next) => {
+  try {
+    const { postContent } = req.body;
+
+    const result = await suggestHashtagsService(postContent);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hashtags: result.hashtags,
       },
     });
   } catch (error) {

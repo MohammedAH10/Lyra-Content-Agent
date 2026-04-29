@@ -373,5 +373,5 @@ Create or update:
 - [x] Sprint 6: Update File Moderation Status
 - [x] Sprint 7: Recommendation Keyword Engine
 - [x] Sprint 8: Recommend Media Endpoint
-- [ ] Sprint 9: AI Service, Post Generation, and Hashtags
+- [x] Sprint 9: AI Service, Post Generation, and Hashtags
 - [ ] Sprint 10: AI Failure Handling, Seed Data, and Submission Artifacts
