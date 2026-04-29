@@ -1,6 +1,7 @@
 import File from '../models/File';
 import { FileAttrs, FileDocument } from '../types';
 import { FileStatus, FileType } from '../utils/constants';
+import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 
 type CreateFileInput = Omit<FileAttrs, 'status' | 'uploadDate' | 'moderationReason'>;
@@ -8,6 +9,11 @@ type CreateFileInput = Omit<FileAttrs, 'status' | 'uploadDate' | 'moderationReas
 type ListFilesFilters = {
   type?: FileType;
   status?: FileStatus;
+};
+
+type UpdateFileStatusInput = {
+  status: 'approved' | 'rejected';
+  moderationReason?: string;
 };
 
 export const createFile = async (input: CreateFileInput): Promise<FileDocument> => {
@@ -47,4 +53,30 @@ export const listFiles = async (filters: ListFilesFilters = {}): Promise<FileDoc
   }
 
   return files;
+};
+
+export const updateFileStatus = async (
+  fileId: string,
+  input: UpdateFileStatusInput,
+): Promise<FileDocument> => {
+  const update = {
+    status: input.status,
+    moderationReason: input.status === 'rejected' ? input.moderationReason : undefined,
+  };
+
+  const file = await File.findByIdAndUpdate(fileId, update, {
+    returnDocument: 'after',
+    runValidators: true,
+  });
+
+  if (!file) {
+    throw new AppError(404, 'NOT_FOUND', 'File not found');
+  }
+
+  logger.info('File status updated', {
+    fileId: file._id.toString(),
+    status: file.status,
+  });
+
+  return file;
 };

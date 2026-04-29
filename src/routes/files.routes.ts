@@ -24,7 +24,32 @@ const listFilesQuerySchema = z
   })
   .strip();
 
+const updateFileStatusParamsSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid file ID'),
+});
+
+const updateFileStatusSchema = z
+  .object({
+    status: z.enum(['approved', 'rejected']),
+    moderationReason: z.string().trim().min(1).optional(),
+  })
+  .strip()
+  .superRefine((data, ctx) => {
+    if (data.status === 'rejected' && !data.moderationReason) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['moderationReason'],
+        message: 'moderationReason is required when status is rejected',
+      });
+    }
+  });
+
 router.get('/', validate({ query: listFilesQuerySchema }), filesController.listFiles);
 router.post('/', validate({ body: createFileSchema }), filesController.createFile);
+router.patch(
+  '/:id/status',
+  validate({ params: updateFileStatusParamsSchema, body: updateFileStatusSchema }),
+  filesController.updateFileStatus,
+);
 
 export default router;

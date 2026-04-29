@@ -370,7 +370,7 @@ Create or update:
 - [x] Sprint 3: Validation and Standard Error Handling
 - [x] Sprint 4: Create File Records
 - [x] Sprint 5: List Files with Moderation Filtering
-- [ ] Sprint 6: Update File Moderation Status
+- [x] Sprint 6: Update File Moderation Status
 - [ ] Sprint 7: Recommendation Keyword Engine
 - [ ] Sprint 8: Recommend Media Endpoint
 - [ ] Sprint 9: AI Service, Post Generation, and Hashtags
