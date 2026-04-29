@@ -1,0 +1,28 @@
+import express, { Request, Response } from 'express';
+
+import { errorHandler } from './middleware/errorHandler';
+import logger from './utils/logger';
+
+const app = express();
+
+app.use(express.json());
+
+app.use((req, _res, next) => {
+  logger.info('Incoming request', {
+    method: req.method,
+    path: req.path,
+    timestamp: new Date().toISOString(),
+  });
+  next();
+});
+
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'API is healthy',
+  });
+});
+
+app.use(errorHandler);
+
+export default app;
