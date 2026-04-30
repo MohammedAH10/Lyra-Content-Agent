@@ -1,34 +1,33 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import logger from '../utils/logger';
 
 export const connectDb = async (mongoUri = process.env.MONGODB_URI): Promise<typeof mongoose> => {
-  const uri = mongoUri;
-
-  if (!uri) {
-    logger.warn('MONGODB_URI not set, using in-memory MongoDB');
-    const mongoServer = await MongoMemoryServer.create();
-    const memoryUri = mongoServer.getUri();
-    const connection = await mongoose.connect(memoryUri);
-    logger.info('MongoDB connected (in-memory)');
-    return connection;
+  if (!mongoUri) {
+    try {
+      logger.warn('MONGODB_URI not set, using in-memory MongoDB');
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      const mongoServer = await MongoMemoryServer.create();
+      const memoryUri = mongoServer.getUri();
+      const connection = await mongoose.connect(memoryUri);
+      logger.info('MongoDB connected (in-memory)');
+      return connection;
+    } catch (fallbackError) {
+      logger.error('In-memory MongoDB fallback failed', { error: fallbackError });
+      throw new Error('MONGODB_URI is required and could not connect to the provided URI. In-memory fallback is only available locally.');
+    }
   }
 
   try {
-    const connection = await mongoose.connect(uri, {
+    const connection = await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 30000,
     });
     logger.info('MongoDB connected');
     return connection;
   } catch (error) {
-    logger.warn('MongoDB connection failed, falling back to in-memory MongoDB', { error: (error as Error).message });
-    const mongoServer = await MongoMemoryServer.create();
-    const memoryUri = mongoServer.getUri();
-    const connection = await mongoose.connect(memoryUri);
-    logger.info('MongoDB connected (in-memory fallback)');
-    return connection;
+    logger.error('MongoDB connection failed', { error: (error as Error).message });
+    throw error;
   }
 };
 
