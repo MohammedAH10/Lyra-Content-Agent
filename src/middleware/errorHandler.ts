@@ -22,14 +22,21 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  logger.error('Unhandled application error', { error: err });
+  logger.error('Unhandled application error', {
+    message: (err as Error).message,
+    stack: (err as Error).stack,
+    name: (err as Error).name,
+  });
 
   res.status(500).json({
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred.',
-      details: {},
+      message: (err as Error).message || 'An unexpected error occurred.',
+      details: {
+        stack: (err as Error).stack,
+        name: (err as Error).name,
+      },
     },
   });
 };

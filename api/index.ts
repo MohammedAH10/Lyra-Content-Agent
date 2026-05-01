@@ -44,7 +44,7 @@ export default async (req: VercelRequest, res: VercelResponse): Promise<void> =>
       error: {
         code: 'INTERNAL_ERROR',
         message: (error as Error).message || 'An unexpected error occurred.',
-        details: {},
+        details: { stack: (error as Error).stack },
       },
     });
   }
