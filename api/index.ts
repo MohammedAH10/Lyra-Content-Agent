@@ -29,7 +29,6 @@ const connectToDatabase = async (): Promise<void> => {
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 8000,
       socketTimeoutMS: 10000,
-      directConnection: true,
     });
     connected = true;
     logger.info('Database connected in serverless function');
