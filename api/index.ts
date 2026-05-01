@@ -2,7 +2,6 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import mongoose from 'mongoose';
 
 import app from '../src/app';
-import { connectDb } from '../src/config/db';
 import logger from '../src/utils/logger';
 
 let connecting = false;
@@ -14,15 +13,26 @@ const connectToDatabase = async (): Promise<void> => {
   }
 
   if (connecting) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     return;
   }
 
   connecting = true;
 
   try {
-    await connectDb();
+    const mongoUri = process.env.MONGODB_URI;
+
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not set.');
+    }
+
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 10000,
+      directConnection: true,
+    });
     connected = true;
+    logger.info('Database connected in serverless function');
   } catch (error) {
     logger.error('Database connection failed in serverless function', {
       error: (error as Error).message,
