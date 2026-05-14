@@ -1,64 +1,43 @@
-# Lyra Content Agent — API Documentation
+# Lyra Content Agent — API Integration Guide
 
 **Version:** 1.0.0
-**Base URL:** `http://localhost:3000` (default)
+**Base URL:** `https://lyra-content-agent.vercel.app`
 **Protocol:** REST / JSON
-**Authentication:** None (assessment scope)
+**Authentication:** None required
 
 ---
 
 ## Overview
 
-The Lyra Content Agent API provides two core systems:
+The Lyra Content Agent API provides two core systems that you can integrate into any frontend or backend application:
 
 1. **Files & Docs Module** — A media library with upload tracking and content moderation
 2. **AI-Assisted Content Creation** — LLM-powered post generation, hashtag suggestions, and media recommendations
 
+The API is deployed and live — no setup required. Just send HTTP requests to the base URL.
+
 ---
 
-## Quick Start
+## Quick Test
 
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Configure environment
-
-Create a `.env` file from the template:
-
-```env
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/lyra_content
-OPENAI_API_KEY=your_openrouter_api_key
-AI_TIMEOUT_MS=15000
-MAX_RECOMMENDATIONS=5
-NODE_ENV=development
-```
-
-> **Note:** The API uses OpenRouter as the LLM gateway. Set `OPENAI_API_KEY` to your OpenRouter API key. The default model is `openai/gpt-oss-120b:free`. You can override it with `AI_MODEL=your-model-id`.
-
-### 3. Seed the database (optional)
+Verify the API is reachable:
 
 ```bash
-npm run seed
+curl https://lyra-content-agent.vercel.app/health
 ```
 
-This populates 12 sample file records across all moderation statuses for testing.
-
-### 4. Start the server
-
-```bash
-npm run dev     # Development with hot reload
-npm start       # Production from compiled output
+```json
+{
+  "success": true,
+  "message": "API is healthy"
+}
 ```
 
 ---
 
-## Files & Docs Module
+## Response Format
 
-All endpoints return a standard response shape:
+All endpoints return a standard shape:
 
 **Success:**
 ```json
@@ -75,17 +54,21 @@ All endpoints return a standard response shape:
   "error": {
     "code": "ERROR_CODE",
     "message": "Human-readable message",
-    "details": { }
+    "details": {}
   }
 }
 ```
+
+---
+
+## Files & Docs Module
 
 ### Create File
 
 Initiates a file upload record. The file enters the moderation pipeline with status `upload_initiated`.
 
 ```
-POST /files
+POST https://lyra-content-agent.vercel.app/files
 ```
 
 **Request body:**
@@ -98,9 +81,12 @@ POST /files
 | `url` | string | Yes | Storage URL (simulated S3 path) |
 | `tags` | string[] | No | Array of tags for recommendation matching |
 
+**Note:** Clients cannot set the `status` field. All new files start as `upload_initiated` to prevent moderation bypass.
+
 **Example:**
+
 ```bash
-curl -X POST http://localhost:3000/files \
+curl -X POST https://lyra-content-agent.vercel.app/files \
   -H "Content-Type: application/json" \
   -d '{
     "name": "product-launch.png",
@@ -123,13 +109,12 @@ curl -X POST http://localhost:3000/files \
     "url": "https://s3.example.com/files/product-launch.png",
     "tags": ["product", "launch", "marketing"],
     "status": "upload_initiated",
+    "uploadDate": "2026-04-30T10:00:00.000Z",
     "createdAt": "2026-04-30T10:00:00.000Z",
     "updatedAt": "2026-04-30T10:00:00.000Z"
   }
 }
 ```
-
-> **Note:** Clients cannot set the `status` field. All new files start as `upload_initiated` to prevent moderation bypass.
 
 ---
 
@@ -138,7 +123,7 @@ curl -X POST http://localhost:3000/files \
 Returns a list of files with moderation filtering.
 
 ```
-GET /files
+GET https://lyra-content-agent.vercel.app/files
 ```
 
 **Query parameters:**
@@ -146,24 +131,22 @@ GET /files
 | Parameter | Type | Description |
 |---|---|---|
 | `type` | string | Filter by file type: `image`, `video`, `audio`, `document` |
-| `status` | string | Filter by moderation status. **Omit this for user-facing calls** to get only approved files. |
+| `status` | string | Filter by moderation status. Omit for user-facing calls to get only approved files |
 
 **Default behavior (no status param):** Returns only `approved` files.
 
-**Example — User-facing (approved only):**
-```bash
-curl "http://localhost:3000/files"
-```
+**Examples:**
 
-**Example — Filter by type:**
 ```bash
-curl "http://localhost:3000/files?type=image"
-```
+# User-facing (approved only)
+curl "https://lyra-content-agent.vercel.app/files"
 
-**Example — Admin view (all statuses):**
-```bash
-curl "http://localhost:3000/files?status=approved"
-curl "http://localhost:3000/files?status=rejected"
+# Filter by type
+curl "https://lyra-content-agent.vercel.app/files?type=image"
+
+# Admin view — specific status
+curl "https://lyra-content-agent.vercel.app/files?status=approved"
+curl "https://lyra-content-agent.vercel.app/files?status=rejected"
 ```
 
 **Response (200):**
@@ -178,7 +161,9 @@ curl "http://localhost:3000/files?status=rejected"
       "size": 204800,
       "url": "https://s3.example.com/files/product-launch.png",
       "tags": ["product", "launch", "marketing"],
+      "uploadDate": "2026-04-30T10:00:00.000Z",
       "status": "approved",
+      "moderationReason": null,
       "createdAt": "2026-04-30T10:00:00.000Z",
       "updatedAt": "2026-04-30T10:00:00.000Z"
     }
@@ -191,10 +176,10 @@ curl "http://localhost:3000/files?status=rejected"
 
 ### Update File Status
 
-Simulates a moderation pipeline outcome. Transitions a file from `upload_initiated` or `scan_in_progress` to `approved` or `rejected`.
+Simulates a moderation pipeline outcome. Transitions a file to `approved` or `rejected`.
 
 ```
-PATCH /files/:id/status
+PATCH https://lyra-content-agent.vercel.app/files/:id/status
 ```
 
 **URL parameters:**
@@ -210,16 +195,16 @@ PATCH /files/:id/status
 | `status` | string | Yes | One of: `approved`, `rejected` |
 | `moderationReason` | string | Required if rejected | Reason for rejection |
 
-**Example — Approve:**
+**Examples:**
+
 ```bash
-curl -X PATCH http://localhost:3000/files/69f.../status \
+# Approve a file
+curl -X PATCH https://lyra-content-agent.vercel.app/files/69f.../status \
   -H "Content-Type: application/json" \
   -d '{ "status": "approved" }'
-```
 
-**Example — Reject:**
-```bash
-curl -X PATCH http://localhost:3000/files/69f.../status \
+# Reject a file
+curl -X PATCH https://lyra-content-agent.vercel.app/files/69f.../status \
   -H "Content-Type: application/json" \
   -d '{
     "status": "rejected",
@@ -235,7 +220,8 @@ curl -X PATCH http://localhost:3000/files/69f.../status \
     "id": "69f...",
     "name": "product-launch.png",
     "status": "approved",
-    ...
+    "moderationReason": null,
+    "updatedAt": "2026-04-30T10:00:00.000Z"
   }
 }
 ```
@@ -250,10 +236,10 @@ curl -X PATCH http://localhost:3000/files/69f.../status \
 
 ### Generate Post
 
-Generates social media post content from a user prompt using LLM.
+Generates social media post content from a user prompt using LLM (OpenRouter / OpenAI GPT-OSS-120B).
 
 ```
-POST /ai/generate-post
+POST https://lyra-content-agent.vercel.app/ai/generate-post
 ```
 
 **Request body:**
@@ -264,9 +250,10 @@ POST /ai/generate-post
 | `tone` | string | No | `professional` | One of: `professional`, `casual`, `excited` |
 | `variations` | number | No | `3` | Number of variations to generate (max 5) |
 
-**Example:**
+**Examples:**
+
 ```bash
-curl -X POST http://localhost:3000/ai/generate-post \
+curl -X POST https://lyra-content-agent.vercel.app/ai/generate-post \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Write a post about our new AI-powered product launch for small businesses",
@@ -307,7 +294,7 @@ curl -X POST http://localhost:3000/ai/generate-post \
 Generates hashtag suggestions from existing post content.
 
 ```
-POST /ai/suggest-hashtags
+POST https://lyra-content-agent.vercel.app/ai/suggest-hashtags
 ```
 
 **Request body:**
@@ -316,9 +303,10 @@ POST /ai/suggest-hashtags
 |---|---|---|---|
 | `postContent` | string | Yes | The post text to extract hashtags from |
 
-**Example:**
+**Examples:**
+
 ```bash
-curl -X POST http://localhost:3000/ai/suggest-hashtags \
+curl -X POST https://lyra-content-agent.vercel.app/ai/suggest-hashtags \
   -H "Content-Type: application/json" \
   -d '{
     "postContent": "We are launching a revolutionary new cloud platform that helps teams collaborate in real-time with AI-powered insights"
@@ -356,7 +344,7 @@ curl -X POST http://localhost:3000/ai/suggest-hashtags \
 Returns a ranked list of approved media files relevant to a given post. Uses keyword matching between post content and file names/tags.
 
 ```
-POST /ai/recommend-media
+POST https://lyra-content-agent.vercel.app/ai/recommend-media
 ```
 
 **Request body:**
@@ -365,9 +353,10 @@ POST /ai/recommend-media
 |---|---|---|---|
 | `postContent` | string | Yes | The post content to match against (minimum 10 characters) |
 
-**Example:**
+**Examples:**
+
 ```bash
-curl -X POST http://localhost:3000/ai/recommend-media \
+curl -X POST https://lyra-content-agent.vercel.app/ai/recommend-media \
   -H "Content-Type: application/json" \
   -d '{
     "postContent": "Product launch marketing campaign announcement"
@@ -388,7 +377,11 @@ curl -X POST http://localhost:3000/ai/recommend-media \
           "size": 204800,
           "url": "https://s3.example.com/files/product-launch-campaign.png",
           "tags": ["product", "launch", "marketing", "campaign"],
-          "status": "approved"
+          "uploadDate": "2026-04-30T10:00:00.000Z",
+          "status": "approved",
+          "moderationReason": null,
+          "createdAt": "...",
+          "updatedAt": "..."
         },
         "score": 4,
         "matchReason": "File tags/name match post keywords: product, launch, marketing, campaign"
@@ -424,23 +417,7 @@ curl -X POST http://localhost:3000/ai/recommend-media \
 **Errors:**
 - `400 VALIDATION_ERROR` — `postContent` is too short (less than 10 characters)
 
-> **Note:** Only `approved` files are ever returned in recommendations. Rejected and pending files are excluded.
-
----
-
-## Health Check
-
-```
-GET /health
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "API is healthy"
-}
-```
+**Note:** Only `approved` files are ever returned in recommendations. Rejected and pending files are excluded.
 
 ---
 
@@ -475,37 +452,14 @@ upload_initiated → scan_in_progress → approved
 
 ---
 
-## Environment Variables
+## Endpoint Summary
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `PORT` | No | `3000` | Server port |
-| `MONGODB_URI` | No | In-memory fallback | MongoDB connection string. Falls back to in-memory MongoDB if not set or unreachable |
-| `OPENAI_API_KEY` | Yes | — | OpenRouter API key |
-| `AI_MODEL` | No | `openai/gpt-oss-120b:free` | LLM model identifier |
-| `AI_TIMEOUT_MS` | No | `15000` | AI request timeout in milliseconds |
-| `MAX_RECOMMENDATIONS` | No | `5` | Maximum number of media recommendations to return |
-| `NODE_ENV` | No | `development` | Node environment |
-
----
-
-## Available Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Compile TypeScript to JavaScript |
-| `npm start` | Start production server |
-| `npm test` | Run the full test suite |
-| `npm run seed` | Seed the database with sample files |
-| `npm run test:watch` | Run tests in watch mode |
-
----
-
-## Constraints
-
-- Only files with `status: "approved"` appear in list responses, recommendations, and asset pickers
-- Media attachment always goes through the Files & Docs library (no direct local uploads)
-- AI calls are wrapped with a configurable timeout (default 15 seconds)
-- All errors are handled gracefully with structured fallback responses
-- Business logic is separated by concern (routes → controllers → services → models)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/files` | Create file record |
+| `GET` | `/files` | List files (approved only by default) |
+| `PATCH` | `/files/:id/status` | Update file moderation status |
+| `POST` | `/ai/generate-post` | Generate AI post content |
+| `POST` | `/ai/suggest-hashtags` | Suggest hashtags from content |
+| `POST` | `/ai/recommend-media` | Recommend media for post |
