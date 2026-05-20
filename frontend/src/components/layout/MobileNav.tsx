@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/formatters';
+import { Icon } from '@/components/ui/Icons';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: '📊' },
-  { href: '/generate-post', label: 'Post', icon: '✍️' },
-  { href: '/suggest-hashtags', label: 'Tags', icon: '🏷️' },
-  { href: '/recommend-media', label: 'Media', icon: '🖼️' },
-  { href: '/files', label: 'Files', icon: '📁' },
+  { href: '/', label: 'Home', icon: 'grid' as const },
+  { href: '/generate-post', label: 'Post', icon: 'edit' as const },
+  { href: '/suggest-hashtags', label: 'Tags', icon: 'tag' as const },
+  { href: '/recommend-media', label: 'Media', icon: 'image' as const },
+  { href: '/files', label: 'Files', icon: 'folder' as const },
 ];
 
 export default function MobileNav() {
@@ -28,7 +29,7 @@ export default function MobileNav() {
               isActive ? 'text-lyra-600' : 'text-gray-400'
             )}
           >
-            <span className="text-base">{item.icon}</span>
+            <Icon name={item.icon} className="w-5 h-5" />
             {item.label}
           </Link>
         );

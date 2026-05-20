@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icons';
 import api from '@/services/api';
 
 const features = [
-  { href: '/generate-post', title: 'Generate Post', desc: 'Create AI-powered social media posts from a prompt', icon: '✍️', color: 'bg-blue-50 border-blue-200' },
-  { href: '/suggest-hashtags', title: 'Suggest Hashtags', desc: 'Get hashtag suggestions from your post content', icon: '🏷️', color: 'bg-purple-50 border-purple-200' },
-  { href: '/recommend-media', title: 'Recommend Media', desc: 'Find approved media files matching your post', icon: '🖼️', color: 'bg-green-50 border-green-200' },
-  { href: '/files', title: 'Files Library', desc: 'Browse and manage your media file records', icon: '📁', color: 'bg-amber-50 border-amber-200' },
+  { href: '/generate-post', title: 'Generate Post', desc: 'Create AI-powered social media posts from a prompt', icon: 'edit' as const, color: 'bg-blue-50 border-blue-200' },
+  { href: '/suggest-hashtags', title: 'Suggest Hashtags', desc: 'Get hashtag suggestions from your post content', icon: 'tag' as const, color: 'bg-purple-50 border-purple-200' },
+  { href: '/recommend-media', title: 'Recommend Media', desc: 'Find approved media files matching your post', icon: 'image' as const, color: 'bg-green-50 border-green-200' },
+  { href: '/files', title: 'Files Library', desc: 'Browse and manage your media file records', icon: 'folder' as const, color: 'bg-amber-50 border-amber-200' },
 ];
 
 export default function Dashboard() {
@@ -45,7 +46,7 @@ export default function Dashboard() {
         {features.map((f) => (
           <Link key={f.href} href={f.href}>
             <Card className={`p-6 border-2 ${f.color} hover:shadow-md transition-all cursor-pointer h-full`}>
-              <div className="text-3xl mb-3">{f.icon}</div>
+              <div className="mb-3 text-lyra-600"><Icon name={f.icon} className="w-8 h-8" /></div>
               <h3 className="font-semibold text-gray-900">{f.title}</h3>
               <p className="text-sm text-gray-600 mt-1">{f.desc}</p>
             </Card>
@@ -56,9 +57,9 @@ export default function Dashboard() {
       <Card className="p-6">
         <h3 className="font-semibold text-gray-900 mb-3">Quick Start</h3>
         <div className="space-y-2 text-sm text-gray-600">
-          <p>1. Generate a post using AI → <Link href="/generate-post" className="text-lyra-600 hover:text-lyra-800 font-medium">Go to Generate Post</Link></p>
+          <p>1. Generate a post using AI → <Link href="/generate-post" className="text-lyra-600 hover:text-lyra-800 font-medium">Generate Post</Link></p>
           <p>2. Find matching media for your content → <Link href="/recommend-media" className="text-lyra-600 hover:text-lyra-800 font-medium">Recommend Media</Link></p>
-          <p>3. Upload file records to the library → <Link href="/files/create" className="text-lyra-600 hover:text-lyra-800 font-medium">Create File</Link></p>
+          <p>3. Upload files to the library → <Link href="/files/create" className="text-lyra-600 hover:text-lyra-800 font-medium">Upload File</Link></p>
 
         </div>
       </Card>

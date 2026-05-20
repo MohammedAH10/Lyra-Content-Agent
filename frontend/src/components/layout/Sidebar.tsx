@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/formatters';
+import { Icon } from '@/components/ui/Icons';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '📊' },
-  { href: '/generate-post', label: 'Generate Post', icon: '✍️' },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: '🏷️' },
-  { href: '/recommend-media', label: 'Recommend Media', icon: '🖼️' },
-  { href: '/files', label: 'Files Library', icon: '📁' },
+  { href: '/', label: 'Dashboard', icon: 'grid' as const },
+  { href: '/generate-post', label: 'Generate Post', icon: 'edit' as const },
+  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'tag' as const },
+  { href: '/recommend-media', label: 'Recommend Media', icon: 'image' as const },
+  { href: '/files', label: 'Files Library', icon: 'folder' as const },
 ];
 
 export default function Sidebar() {
@@ -39,7 +40,7 @@ export default function Sidebar() {
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               )}
             >
-              <span>{item.icon}</span>
+              <Icon name={item.icon} />
               {item.label}
             </Link>
           );
@@ -51,7 +52,7 @@ export default function Sidebar() {
           target="_blank"
           className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600"
         >
-          <span className="w-2 h-2 bg-green-500 rounded-full" />
+          <span className="w-2 h-2 bg-green-500 rounded-full inline-block" />
           API Status
         </a>
       </div>
