@@ -10,7 +10,6 @@ const navItems = [
   { href: '/suggest-hashtags', label: 'Tags', icon: '🏷️' },
   { href: '/recommend-media', label: 'Media', icon: '🖼️' },
   { href: '/files', label: 'Files', icon: '📁' },
-  { href: '/social', label: 'Social', icon: '🌐' },
 ];
 
 export default function MobileNav() {

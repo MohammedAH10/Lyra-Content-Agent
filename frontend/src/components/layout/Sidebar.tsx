@@ -10,7 +10,6 @@ const navItems = [
   { href: '/suggest-hashtags', label: 'Hashtags', icon: '🏷️' },
   { href: '/recommend-media', label: 'Recommend Media', icon: '🖼️' },
   { href: '/files', label: 'Files Library', icon: '📁' },
-  { href: '/social', label: 'Social', icon: '🌐' },
 ];
 
 export default function Sidebar() {

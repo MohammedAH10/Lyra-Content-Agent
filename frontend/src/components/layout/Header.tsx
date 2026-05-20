@@ -9,9 +9,7 @@ const pageTitles: Record<string, string> = {
   '/recommend-media': 'Recommend Media',
   '/files': 'Files Library',
   '/files/create': 'Upload File',
-  '/social': 'Social Accounts',
-  '/social/connect': 'Connect Account',
-  '/social/publish': 'Publish Post',
+
 };
 
 export default function Header() {

@@ -11,7 +11,6 @@ export interface ApiResponse<T> {
 export type FileType = 'image' | 'video' | 'audio' | 'document';
 export type FileStatus = 'upload_initiated' | 'scan_in_progress' | 'approved' | 'rejected';
 export type Tone = 'professional' | 'casual' | 'excited';
-export type SocialPlatform = 'twitter' | 'instagram' | 'linkedin';
 
 export interface FileRecord {
   id: string;
@@ -47,14 +46,6 @@ export interface RecommendMediaResult {
 
 export interface SuggestHashtagsResult {
   hashtags: string[];
-}
-
-export interface ConnectedAccount {
-  platform: SocialPlatform;
-  accountId: string;
-  accountName: string;
-  avatarUrl?: string;
-  connectedAt: string;
 }
 
 export interface CreateFilePayload {

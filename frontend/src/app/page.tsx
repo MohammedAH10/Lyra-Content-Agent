@@ -11,7 +11,6 @@ const features = [
   { href: '/suggest-hashtags', title: 'Suggest Hashtags', desc: 'Get hashtag suggestions from your post content', icon: '🏷️', color: 'bg-purple-50 border-purple-200' },
   { href: '/recommend-media', title: 'Recommend Media', desc: 'Find approved media files matching your post', icon: '🖼️', color: 'bg-green-50 border-green-200' },
   { href: '/files', title: 'Files Library', desc: 'Browse and manage your media file records', icon: '📁', color: 'bg-amber-50 border-amber-200' },
-  { href: '/social', title: 'Social Accounts', desc: 'Connect Twitter, Instagram, and LinkedIn', icon: '🌐', color: 'bg-rose-50 border-rose-200' },
 ];
 
 export default function Dashboard() {
@@ -60,7 +59,7 @@ export default function Dashboard() {
           <p>1. Generate a post using AI → <Link href="/generate-post" className="text-lyra-600 hover:text-lyra-800 font-medium">Go to Generate Post</Link></p>
           <p>2. Find matching media for your content → <Link href="/recommend-media" className="text-lyra-600 hover:text-lyra-800 font-medium">Recommend Media</Link></p>
           <p>3. Upload file records to the library → <Link href="/files/create" className="text-lyra-600 hover:text-lyra-800 font-medium">Create File</Link></p>
-          <p>4. Connect social accounts and publish → <Link href="/social" className="text-lyra-600 hover:text-lyra-800 font-medium">Social</Link></p>
+
         </div>
       </Card>
 

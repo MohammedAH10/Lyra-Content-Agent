@@ -1,7 +1,6 @@
 export const FILE_TYPES = ['image', 'video', 'audio', 'document'] as const;
 export const FILE_STATUSES = ['upload_initiated', 'scan_in_progress', 'approved', 'rejected'] as const;
 export const TONES = ['professional', 'casual', 'excited'] as const;
-export const SOCIAL_PLATFORMS = ['twitter', 'instagram', 'linkedin'] as const;
 
 export const STATUS_LABELS: Record<string, string> = {
   upload_initiated: 'Upload Initiated',
