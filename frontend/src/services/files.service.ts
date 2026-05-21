@@ -24,21 +24,6 @@ export async function createFile(
   return api.post('/files', payload);
 }
 
-export async function uploadFile(formData: FormData): Promise<ApiResponse<FileRecord>> {
-  const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
-  const response = await fetch(`${baseURL}/files/upload`, {
-    method: 'POST',
-    body: formData,
-  });
-  const result = (await response.json()) as ApiResponse<FileRecord>;
-
-  if (!response.ok || !result.success) {
-    throw result;
-  }
-
-  return result;
-}
-
 export async function updateFileStatus(
   id: string,
   payload: UpdateStatusPayload

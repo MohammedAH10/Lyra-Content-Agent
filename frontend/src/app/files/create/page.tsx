@@ -9,9 +9,10 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import FileUploadForm from '@/components/files/FileUploadForm';
 import FileStatusBadge from '@/components/files/FileStatusBadge';
-import { updateFileStatus, uploadFile } from '@/services/files.service';
+import { createFile, updateFileStatus } from '@/services/files.service';
 import { formatFileSize } from '@/utils/formatters';
 import type { FileRecord, FileType } from '@/types';
+import { upload } from '@vercel/blob/client';
 
 export default function CreateFilePage() {
   const router = useRouter();
@@ -33,12 +34,18 @@ export default function CreateFilePage() {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', data.file);
-      formData.append('name', data.name);
-      formData.append('tags', JSON.stringify(data.tags));
+      const blob = await upload(`media/${data.name}`, data.file, {
+        access: 'public',
+        handleUploadUrl: '/blob-upload',
+      });
 
-      const res = await uploadFile(formData);
+      const res = await createFile({
+        name: data.name,
+        type: data.type,
+        size: data.size,
+        url: blob.url,
+        tags: data.tags,
+      });
       if (res.success && res.data) {
         setFile(res.data);
         setRejectReason('');

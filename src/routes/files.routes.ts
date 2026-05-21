@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { z } from 'zod';
 
 import * as filesController from '../controllers/files.controller';
@@ -7,12 +6,6 @@ import { validate } from '../middleware/validate';
 import { FILE_STATUSES, FILE_TYPES } from '../utils/constants';
 
 const router = Router();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 4 * 1024 * 1024,
-  },
-});
 
 const createFileSchema = z
   .object({
@@ -54,7 +47,6 @@ const updateFileStatusSchema = z
 router.get('/', validate({ query: listFilesQuerySchema }), filesController.listFiles);
 router.get('/:id', validate({ params: updateFileStatusParamsSchema }), filesController.getFileById);
 router.post('/', validate({ body: createFileSchema }), filesController.createFile);
-router.post('/upload', upload.single('file'), filesController.uploadFile);
 router.patch(
   '/:id/status',
   validate({ params: updateFileStatusParamsSchema, body: updateFileStatusSchema }),
