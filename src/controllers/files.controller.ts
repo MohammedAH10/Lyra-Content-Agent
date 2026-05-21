@@ -45,6 +45,19 @@ export const listFiles: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const getFileById: RequestHandler = async (req, res, next) => {
+  try {
+    const file = await filesService.getFileById(String(req.params.id));
+
+    res.status(200).json({
+      success: true,
+      data: serializeFile(file),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateFileStatus: RequestHandler = async (req, res, next) => {
   try {
     const file = await filesService.updateFileStatus(String(req.params.id), req.body);

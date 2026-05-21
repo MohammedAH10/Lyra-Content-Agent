@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { ApiResponse } from '@/types';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://lyra-content-agent.vercel.app',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
 });

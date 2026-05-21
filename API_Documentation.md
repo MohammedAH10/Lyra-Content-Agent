@@ -2,6 +2,7 @@
 
 **Version:** 1.0.0
 **Base URL:** `https://lyra-content-agent.vercel.app`
+**Full-stack app API prefix:** `/api` (for example, `https://lyra-content-agent.vercel.app/api/files`)
 **Protocol:** REST / JSON
 **Authentication:** None required
 

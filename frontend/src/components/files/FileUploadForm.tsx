@@ -3,14 +3,30 @@
 import { useState, useRef } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import type { FileType } from '@/types';
 
-function getFileTypeFromName(name: string): string {
+function getFileTypeFromName(name: string): FileType {
   const ext = name.split('.').pop()?.toLowerCase() || '';
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp'].includes(ext)) return 'image';
   if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video';
   if (['mp3', 'wav', 'ogg', 'aac', 'flac'].includes(ext)) return 'audio';
   if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(ext)) return 'document';
   return 'document';
+}
+
+function getFileExtension(name: string): string {
+  const index = name.lastIndexOf('.');
+  if (index === -1 || index === name.length - 1) return '';
+  return name.slice(index).toLowerCase();
+}
+
+function buildStoredName(displayName: string, originalName: string): string {
+  const trimmed = displayName.trim();
+  const ext = getFileExtension(originalName);
+  const withoutExistingExt = ext && trimmed.toLowerCase().endsWith(ext)
+    ? trimmed.slice(0, -ext.length)
+    : trimmed;
+  return `${withoutExistingExt}${ext}`.replace(/\s+/g, '-');
 }
 
 function formatBytes(bytes: number): string {
@@ -25,47 +41,49 @@ export default function FileUploadForm({
   onSubmit,
   loading,
 }: {
-  onSubmit: (data: { name: string; type: string; size: number; url: string; tags: string[] }) => void;
+  onSubmit: (data: { name: string; type: FileType; size: number; url: string; tags: string[] }) => void;
   loading: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState('');
+  const [newName, setNewName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [tags, setTags] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fileName.trim() || !selectedFile) return;
+    if (!newName.trim() || !selectedFile) return;
 
     const tagList = tags
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
+    const storedName = buildStoredName(newName, selectedFile.name);
 
     onSubmit({
-      name: fileName.trim(),
-      type: getFileTypeFromName(fileName.trim()),
+      name: storedName,
+      type: getFileTypeFromName(storedName),
       size: selectedFile.size,
-      url: `https://s3.example.com/files/${fileName.trim()}`,
+      url: `https://s3.example.com/files/${encodeURIComponent(storedName)}`,
       tags: tagList,
     });
   };
 
-  const type = getFileTypeFromName(fileName);
+  const storedName = selectedFile && newName.trim() ? buildStoredName(newName, selectedFile.name) : '';
+  const type = storedName ? getFileTypeFromName(storedName) : undefined;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
       <Input
-        label="File name"
-        placeholder="product-launch.png"
-        value={fileName}
-        onChange={(e) => setFileName(e.target.value)}
+        label="New file name"
+        placeholder="product launch"
+        value={newName}
+        onChange={(e) => setNewName(e.target.value)}
         required
       />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Select any file (only the size will be used)
+          File
         </label>
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -93,17 +111,17 @@ export default function FileUploadForm({
         onChange={(e) => setTags(e.target.value)}
       />
 
-      {fileName && selectedFile && (
+      {storedName && selectedFile && (
         <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1 border border-gray-200">
-          <p>Name: <span className="text-gray-700">{fileName}</span></p>
+          <p>Stored name: <span className="text-gray-700">{storedName}</span></p>
+          <p>Original extension: <span className="text-gray-700">{getFileExtension(selectedFile.name) || 'none'}</span></p>
           <p>Type: <span className="text-gray-700 capitalize">{type}</span></p>
           <p>Size: <span className="text-gray-700">{formatBytes(selectedFile.size)}</span></p>
-          <p>URL: <span className="text-gray-700">s3.example.com/files/{fileName}</span></p>
         </div>
       )}
 
-      <Button type="submit" loading={loading} disabled={!fileName.trim() || !selectedFile} className="w-full">
-        Upload File
+      <Button type="submit" loading={loading} disabled={!newName.trim() || !selectedFile} className="w-full">
+        Submit for Review
       </Button>
     </form>
   );

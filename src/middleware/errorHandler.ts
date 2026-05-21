@@ -32,11 +32,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
-      message: (err as Error).message || 'An unexpected error occurred.',
-      details: {
-        stack: (err as Error).stack,
-        name: (err as Error).name,
-      },
+      message: 'An unexpected error occurred.',
+      details: {},
     },
   });
 };

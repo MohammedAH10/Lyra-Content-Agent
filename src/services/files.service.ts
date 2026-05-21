@@ -83,6 +83,26 @@ export const listFiles = async (filters: ListFilesFilters = {}): Promise<FileDoc
   return files;
 };
 
+export const getFileById = async (fileId: string): Promise<FileDocument> => {
+  let file: FileDocument | null;
+  try {
+    file = await File.findById(fileId);
+  } catch (error: unknown) {
+    if (error instanceof Error && (error as any).name === 'MongoServerError') {
+      throw new AppError(500, 'DB_ERROR', 'Failed to retrieve file from database.', {
+        originalError: error.message,
+      });
+    }
+    throw error;
+  }
+
+  if (!file) {
+    throw new AppError(404, 'NOT_FOUND', 'File not found');
+  }
+
+  return file;
+};
+
 export const updateFileStatus = async (
   fileId: string,
   input: UpdateFileStatusInput,

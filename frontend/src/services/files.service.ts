@@ -1,6 +1,7 @@
 import api from './api';
 import type {
   ApiResponse,
+  FileListResponse,
   FileRecord,
   CreateFilePayload,
   UpdateStatusPayload,
@@ -9,8 +10,12 @@ import type {
 export async function fetchFiles(params?: {
   type?: string;
   status?: string;
-}): Promise<ApiResponse<{ data: FileRecord[]; count: number }>> {
+}): Promise<FileListResponse> {
   return api.get('/files', { params });
+}
+
+export async function fetchFileById(id: string): Promise<ApiResponse<FileRecord>> {
+  return api.get(`/files/${id}`);
 }
 
 export async function createFile(

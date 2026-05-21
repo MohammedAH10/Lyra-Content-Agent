@@ -45,6 +45,7 @@ const updateFileStatusSchema = z
   });
 
 router.get('/', validate({ query: listFilesQuerySchema }), filesController.listFiles);
+router.get('/:id', validate({ params: updateFileStatusParamsSchema }), filesController.getFileById);
 router.post('/', validate({ body: createFileSchema }), filesController.createFile);
 router.patch(
   '/:id/status',

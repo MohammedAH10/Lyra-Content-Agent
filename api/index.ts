@@ -45,6 +45,9 @@ const connectToDatabase = async (): Promise<void> => {
 export default async (req: VercelRequest, res: VercelResponse): Promise<void> => {
   try {
     await connectToDatabase();
+    if (req.url?.startsWith('/api/')) {
+      req.url = req.url.replace(/^\/api/, '');
+    }
     app(req, res);
   } catch (error) {
     logger.error('Serverless function error', { error: (error as Error).message });

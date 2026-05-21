@@ -30,8 +30,8 @@ export default function FilesPage() {
       if (status) params.status = status;
       const res = await fetchFiles(params);
       if (res.success && res.data) {
-        setFiles(res.data.data);
-        setCount(res.data.count);
+        setFiles(res.data);
+        setCount(res.count);
       } else {
         setError(res.error?.message || 'Failed to load files');
       }

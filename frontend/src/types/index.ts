@@ -8,6 +8,10 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface FileListResponse extends ApiResponse<FileRecord[]> {
+  count: number;
+}
+
 export type FileType = 'image' | 'video' | 'audio' | 'document';
 export type FileStatus = 'upload_initiated' | 'scan_in_progress' | 'approved' | 'rejected';
 export type Tone = 'professional' | 'casual' | 'excited';

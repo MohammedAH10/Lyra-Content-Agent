@@ -9,7 +9,7 @@ import SuccessAlert from '@/components/ui/SuccessAlert';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import FileStatusBadge from '@/components/files/FileStatusBadge';
-import { fetchFiles, updateFileStatus } from '@/services/files.service';
+import { fetchFileById, updateFileStatus } from '@/services/files.service';
 import { formatFileSize, formatDate } from '@/utils/formatters';
 import type { FileRecord } from '@/types';
 
@@ -28,14 +28,11 @@ export default function FileDetailPage() {
   useEffect(() => {
     const loadFile = async () => {
       try {
-        const res = await fetchFiles();
+        const res = await fetchFileById(params.id as string);
         if (res.success && res.data) {
-          const found = res.data.data.find((f: FileRecord) => f.id === params.id);
-          if (found) {
-            setFile(found);
-          } else {
-            setError('File not found');
-          }
+          setFile(res.data);
+        } else {
+          setError(res.error?.message || 'File not found');
         }
       } catch {
         setError('Failed to load file');
@@ -110,12 +107,6 @@ export default function FileDetailPage() {
           <div>
             <span className="text-gray-500">ID</span>
             <p className="font-mono text-xs mt-0.5">{file.id}</p>
-          </div>
-          <div>
-            <span className="text-gray-500">URL</span>
-            <p className="text-lyra-600 truncate mt-0.5">
-              <a href={file.url} target="_blank" rel="noreferrer">{file.url}</a>
-            </p>
           </div>
           <div>
             <span className="text-gray-500">Upload Date</span>
