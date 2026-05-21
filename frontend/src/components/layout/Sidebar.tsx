@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icons';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'grid' as const },
-  { href: '/generate-post', label: 'Generate Post', icon: 'edit' as const },
+  { href: '/generate-post', label: 'Create Content', icon: 'edit' as const },
   { href: '/suggest-hashtags', label: 'Hashtags', icon: 'tag' as const },
   { href: '/recommend-media', label: 'Recommend Media', icon: 'image' as const },
   { href: '/files', label: 'Files Library', icon: 'folder' as const },
