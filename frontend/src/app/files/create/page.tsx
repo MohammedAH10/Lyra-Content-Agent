@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import FileUploadForm from '@/components/files/FileUploadForm';
 import FileStatusBadge from '@/components/files/FileStatusBadge';
-import { createFile, updateFileStatus } from '@/services/files.service';
+import { updateFileStatus, uploadFile } from '@/services/files.service';
 import { formatFileSize } from '@/utils/formatters';
 import type { FileRecord, FileType } from '@/types';
 
@@ -27,19 +27,18 @@ export default function CreateFilePage() {
     name: string;
     type: FileType;
     size: number;
-    url: string;
     tags: string[];
+    file: File;
   }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await createFile({
-        name: data.name,
-        type: data.type,
-        size: data.size,
-        url: data.url,
-        tags: data.tags,
-      });
+      const formData = new FormData();
+      formData.append('file', data.file);
+      formData.append('name', data.name);
+      formData.append('tags', JSON.stringify(data.tags));
+
+      const res = await uploadFile(formData);
       if (res.success && res.data) {
         setFile(res.data);
         setRejectReason('');

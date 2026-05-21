@@ -16,6 +16,7 @@ export const ERROR_CODES = [
   'AI_UNAVAILABLE',
   'AI_TIMEOUT',
   'DB_ERROR',
+  'STORAGE_NOT_CONFIGURED',
   'INTERNAL_ERROR',
 ] as const;
 

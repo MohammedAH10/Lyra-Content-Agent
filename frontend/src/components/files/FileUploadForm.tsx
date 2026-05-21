@@ -41,7 +41,7 @@ export default function FileUploadForm({
   onSubmit,
   loading,
 }: {
-  onSubmit: (data: { name: string; type: FileType; size: number; url: string; tags: string[] }) => void;
+  onSubmit: (data: { name: string; type: FileType; size: number; tags: string[]; file: File }) => void;
   loading: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,8 +63,8 @@ export default function FileUploadForm({
       name: storedName,
       type: getFileTypeFromName(storedName),
       size: selectedFile.size,
-      url: `https://s3.example.com/files/${encodeURIComponent(storedName)}`,
       tags: tagList,
+      file: selectedFile,
     });
   };
 

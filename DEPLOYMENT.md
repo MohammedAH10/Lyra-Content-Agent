@@ -16,6 +16,7 @@ MONGODB_URI=your_mongodb_atlas_connection_string
 OPENAI_API_KEY=your_openrouter_api_key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 AI_MODEL=openai/gpt-oss-120b:free
+BLOB_READ_WRITE_TOKEN=your_vercel_blob_read_write_token
 AI_TIMEOUT_MS=15000
 MAX_RECOMMENDATIONS=5
 NODE_ENV=production
@@ -60,7 +61,7 @@ API endpoints in the full-stack deployment:
 
 1. User selects a local file, enters a new stored name, and adds tags.
 2. The frontend keeps the original file extension and file size.
-3. The simulated S3 URL is generated internally and is not shown in the UI.
+3. The selected media is uploaded to Vercel Blob.
 4. The file is created with `upload_initiated`.
 5. The user approves or rejects it.
 6. Only approved files are listed by default and used for media recommendations.
