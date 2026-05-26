@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const sora = Sora({ subsets: ['latin'], variable: '--font-sora' });
 
 export const metadata: Metadata = {
-  title: 'Lyra Content Agent',
+  title: 'Amiri Content Agent',
   description: 'AI-powered social media content creation and media management',
 };
 

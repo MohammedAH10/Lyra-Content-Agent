@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import ErrorAlert from '@/components/ui/ErrorAlert';
@@ -10,7 +11,10 @@ import MediaRecommendationGrid from '@/components/media/MediaRecommendationGrid'
 import { recommendMedia } from '@/services/ai.service';
 import type { MediaRecommendation } from '@/types';
 
-export default function RecommendMediaPage() {
+function RecommendMediaContent() {
+  const searchParams = useSearchParams();
+  const queryParam = searchParams.get('q') || undefined;
+
   const [recommendations, setRecommendations] = useState<MediaRecommendation[]>([]);
   const [message, setMessage] = useState<string | undefined>();
   const [totalMatched, setTotalMatched] = useState(0);
@@ -45,7 +49,7 @@ export default function RecommendMediaPage() {
         <p className="text-sm text-text-muted mb-4">
           Describe your post content and we&apos;ll find approved media files that match.
         </p>
-        <MediaRecommenderForm onSubmit={handleSubmit} loading={loading} />
+        <MediaRecommenderForm onSubmit={handleSubmit} loading={loading} initialValue={queryParam} />
       </Card>
 
       {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
@@ -73,5 +77,17 @@ export default function RecommendMediaPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function RecommendMediaPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-3xl mx-auto space-y-stack-lg">
+        <Card><Spinner /></Card>
+      </div>
+    }>
+      <RecommendMediaContent />
+    </Suspense>
   );
 }

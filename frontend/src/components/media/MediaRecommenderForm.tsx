@@ -1,22 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 
 export default function MediaRecommenderForm({
   onSubmit,
   loading,
+  initialValue,
 }: {
   onSubmit: (content: string) => void;
   loading: boolean;
+  initialValue?: string;
 }) {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(initialValue || '');
   const [error, setError] = useState('');
+  const [autoSubmitted, setAutoSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (initialValue && !autoSubmitted) {
+      setContent(initialValue);
+      if (initialValue.trim().length >= 1) {
+        setAutoSubmitted(true);
+        onSubmit(initialValue);
+      }
+    }
+  }, [initialValue, autoSubmitted, onSubmit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (content.trim().length < 10) {
-      setError('Post content must be at least 10 characters');
+    if (content.trim().length < 1) {
+      setError('Enter some text to search for matching media');
       return;
     }
     setError('');

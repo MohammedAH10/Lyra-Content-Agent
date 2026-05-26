@@ -48,7 +48,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          <h2 className="font-sora text-headline-xl text-on-surface">Welcome to Lyra Content Agent</h2>
+          <h2 className="font-sora text-headline-xl text-on-surface">Welcome to Amiri Content Agent</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
             AI-powered content creation and media management for the next generation of social influence.
           </p>

@@ -22,7 +22,7 @@ export default function Sidebar() {
           <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
         </div>
         <div>
-          <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">Lyra AI</h1>
+          <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">Amiri AI</h1>
           <p className="text-[10px] uppercase tracking-widest text-neon-cyan/80 mt-1">Cerebral-Neon Engine</p>
         </div>
       </div>

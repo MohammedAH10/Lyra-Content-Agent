@@ -29,7 +29,7 @@ export default function HashtagInputForm({
         <label className="text-label-sm text-neon-violet uppercase tracking-widest ml-1">Post Content</label>
         <textarea
           className="w-full h-40 bg-black/30 border border-glass-border rounded-2xl p-5 font-body-md text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all resize-none"
-          placeholder="Paste your post caption or content here... Lyra will analyze the core themes and sentiment to generate the most effective hashtags for maximum engagement."
+          placeholder="Paste your post caption or content here... Amiri will analyze the core themes and sentiment to generate the most effective hashtags for maximum engagement."
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
