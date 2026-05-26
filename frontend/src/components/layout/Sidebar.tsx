@@ -3,30 +3,30 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/formatters';
-import { Icon } from '@/components/ui/Icons';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: 'grid' as const },
-  { href: '/generate-post', label: 'Create Content', icon: 'edit' as const },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'tag' as const },
-  { href: '/recommend-media', label: 'Recommend Media', icon: 'image' as const },
-  { href: '/files', label: 'Files Library', icon: 'folder' as const },
+  { href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/generate-post', label: 'Create', icon: 'auto_awesome' },
+  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'tag' },
+  { href: '/recommend-media', label: 'Media', icon: 'perm_media' },
+  { href: '/files', label: 'Library', icon: 'folder_open' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen hidden lg:flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-lyra-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-            L
-          </div>
-          <span className="font-semibold text-gray-900">Lyra Agent</span>
-        </Link>
+    <aside className="h-screen w-64 fixed left-0 top-0 hidden lg:flex flex-col bg-glass-surface backdrop-blur-[24px] border-r border-glass-border shadow-2xl shadow-deep-obsidian z-50 py-stack-sm">
+      <div className="px-6 mb-10 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-violet to-neon-cyan flex items-center justify-center neon-glow-violet">
+          <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+        </div>
+        <div>
+          <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">Lyra AI</h1>
+          <p className="text-[10px] uppercase tracking-widest text-neon-cyan/80 mt-1">Cerebral-Neon Engine</p>
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 space-y-1 px-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
@@ -34,27 +34,32 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-4 py-3 rounded-lg font-body-md transition-all',
                 isActive
-                  ? 'bg-lyra-50 text-lyra-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'text-neon-cyan border-r-2 border-neon-cyan bg-gradient-to-r from-neon-cyan/10 to-transparent'
+                  : 'text-text-muted hover:text-on-surface hover:bg-white/5'
               )}
             >
-              <Icon name={item.icon} />
-              {item.label}
+              <span className="material-symbols-outlined">{item.icon}</span>
+              <span className="font-medium">{item.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="p-4 border-t border-gray-200">
-        <a
-          href="https://lyra-content-agent.vercel.app/health"
-          target="_blank"
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600"
-        >
-          <span className="w-2 h-2 bg-green-500 rounded-full inline-block" />
-          API Status
-        </a>
+      <div className="px-4 mt-auto space-y-4">
+        <button className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-neon-violet to-neon-pink text-white font-bold neon-glow-violet active:scale-95 transition-all text-sm">
+          Upgrade Pro
+        </button>
+        <div className="pt-4 border-t border-glass-border space-y-1">
+          <a
+            href="https://lyra-content-agent.vercel.app/health"
+            target="_blank"
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-text-muted hover:text-on-surface hover:bg-white/5 transition-colors"
+          >
+            <span className="material-symbols-outlined">monitor_heart</span>
+            <span className="text-sm">API Status</span>
+          </a>
+        </div>
       </div>
     </aside>
   );

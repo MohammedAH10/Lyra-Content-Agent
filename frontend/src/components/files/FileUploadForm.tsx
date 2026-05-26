@@ -5,6 +5,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import type { FileType } from '@/types';
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
 function getFileTypeFromName(name: string): FileType {
   const ext = name.split('.').pop()?.toLowerCase() || '';
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp'].includes(ext)) return 'image';
@@ -48,10 +50,26 @@ export default function FileUploadForm({
   const [newName, setNewName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [tags, setTags] = useState('');
+  const [fileError, setFileError] = useState('');
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setFileError('');
+    if (file && file.size > MAX_FILE_SIZE) {
+      setFileError(`File too large (${formatBytes(file.size)}). Max: ${formatBytes(MAX_FILE_SIZE)}`);
+      setSelectedFile(null);
+      return;
+    }
+    setSelectedFile(file);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !selectedFile) return;
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFileError(`File too large (${formatBytes(selectedFile.size)}). Max: ${formatBytes(MAX_FILE_SIZE)}`);
+      return;
+    }
 
     const tagList = tags
       .split(',')
@@ -82,26 +100,25 @@ export default function FileUploadForm({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
           File
         </label>
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-lyra-400 hover:bg-lyra-50/50 transition-colors"
+          className="border-2 border-dashed border-glass-border rounded-xl p-6 text-center cursor-pointer hover:border-neon-cyan/50 transition-colors bg-black/20"
         >
-          <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          <p className="mt-2 text-sm text-gray-500">
+          <span className="material-symbols-outlined text-3xl text-text-muted">upload_file</span>
+          <p className="mt-2 text-sm text-text-muted">
             {selectedFile ? selectedFile.name : 'Click to select a file'}
           </p>
           <input
             ref={fileInputRef}
             type="file"
-            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            onChange={handleFileSelect}
             className="hidden"
           />
         </div>
+        {fileError && <p className="mt-1 text-sm text-error">{fileError}</p>}
       </div>
 
       <Input
@@ -112,11 +129,11 @@ export default function FileUploadForm({
       />
 
       {storedName && selectedFile && (
-        <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1 border border-gray-200">
-          <p>Stored name: <span className="text-gray-700">{storedName}</span></p>
-          <p>Original extension: <span className="text-gray-700">{getFileExtension(selectedFile.name) || 'none'}</span></p>
-          <p>Type: <span className="text-gray-700 capitalize">{type}</span></p>
-          <p>Size: <span className="text-gray-700">{formatBytes(selectedFile.size)}</span></p>
+        <div className="glass-card rounded-xl p-3 text-xs text-text-muted space-y-1">
+          <p>Stored name: <span className="text-on-surface">{storedName}</span></p>
+          <p>Original extension: <span className="text-on-surface">{getFileExtension(selectedFile.name) || 'none'}</span></p>
+          <p>Type: <span className="text-on-surface capitalize">{type}</span></p>
+          <p>Size: <span className="text-on-surface">{formatBytes(selectedFile.size)}</span></p>
         </div>
       )}
 

@@ -34,26 +34,50 @@ export default function SuggestHashtagsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Suggest Hashtags</h2>
-        <p className="text-sm text-gray-500 mb-4">Enter your post content and get relevant hashtag suggestions.</p>
+    <div className="max-w-2xl mx-auto space-y-stack-lg">
+      <Card>
+        <h2 className="font-sora text-headline-lg text-on-surface mb-4">Suggest Hashtags</h2>
+        <p className="text-sm text-text-muted mb-4">Enter your post content and get relevant hashtag suggestions.</p>
         <HashtagInputForm onSubmit={handleSubmit} loading={loading} />
       </Card>
 
       {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
 
-      {loading && <Card className="p-6"><Spinner /></Card>}
+      {loading && <Card><Spinner /></Card>}
 
       {hashtags.length > 0 && (
-        <Card className="p-6 space-y-4">
-          <SuccessAlert message={`Generated ${hashtags.length} hashtags!`} />
-          <HashtagCloud hashtags={hashtags} />
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Copy all:</h3>
-            <HashtagList hashtags={hashtags} />
-          </div>
-        </Card>
+        <>
+          <Card className="space-y-4">
+            <SuccessAlert message={`Generated ${hashtags.length} hashtags!`} />
+            <HashtagCloud hashtags={hashtags} />
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-on-surface mb-2">Copy all:</h3>
+              <HashtagList hashtags={hashtags} />
+            </div>
+          </Card>
+
+          <Card>
+            <h3 className="font-sora text-headline-lg text-on-surface mb-6">Hashtag Performance</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+              <div className="text-center p-6 rounded-2xl bg-white/5 border border-glass-border">
+                <div className="text-2xl font-bold text-neon-violet mb-1">4.2M</div>
+                <div className="text-[10px] tracking-widest text-text-muted uppercase">Global Reach</div>
+              </div>
+              <div className="text-center p-6 rounded-2xl bg-white/5 border border-glass-border">
+                <div className="text-2xl font-bold text-neon-cyan mb-1">862k</div>
+                <div className="text-[10px] tracking-widest text-text-muted uppercase">Impressions</div>
+              </div>
+              <div className="text-center p-6 rounded-2xl bg-white/5 border border-glass-border">
+                <div className="text-2xl font-bold text-neon-pink mb-1">12%</div>
+                <div className="text-[10px] tracking-widest text-text-muted uppercase">Click Rate</div>
+              </div>
+              <div className="text-center p-6 rounded-2xl bg-white/5 border border-glass-border">
+                <div className="text-2xl font-bold text-on-surface mb-1">High</div>
+                <div className="text-[10px] tracking-widest text-text-muted uppercase">Velocity</div>
+              </div>
+            </div>
+          </Card>
+        </>
       )}
     </div>
   );

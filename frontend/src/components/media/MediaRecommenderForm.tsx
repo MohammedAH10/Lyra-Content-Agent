@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
-import TextArea from '@/components/ui/TextArea';
 
 export default function MediaRecommenderForm({
   onSubmit,
@@ -26,14 +25,17 @@ export default function MediaRecommenderForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <TextArea
-        label="Describe your post content"
-        placeholder="Product launch marketing campaign announcement for new cloud platform..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        error={error}
-      />
-      <Button type="submit" loading={loading} className="w-full">
+      <div className="space-y-2">
+        <label className="text-label-sm text-neon-violet uppercase tracking-widest ml-1">Describe your post content</label>
+        <textarea
+          className="w-full h-32 bg-black/30 border border-glass-border rounded-2xl p-5 font-body-md text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all resize-none"
+          placeholder="Product launch marketing campaign announcement for new cloud platform..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+        {error && <p className="text-sm text-error ml-1">{error}</p>}
+      </div>
+      <Button type="submit" loading={loading}>
         Find Matching Media
       </Button>
     </form>

@@ -88,58 +88,58 @@ export default function FileDetailPage() {
     }
   };
 
-  if (loading) return <Card className="p-6"><Spinner /></Card>;
+  if (loading) return <Card><Spinner /></Card>;
   if (error) return <ErrorAlert message={error} onRetry={() => router.push('/files')} />;
   if (!file) return <ErrorAlert message="File not found" onRetry={() => router.push('/files')} />;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="p-6">
+    <div className="max-w-2xl mx-auto space-y-stack-lg">
+      <Card>
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">{file.name}</h2>
-            <p className="text-sm text-gray-500 mt-1 capitalize">{file.type} · {formatFileSize(file.size)}</p>
+            <h2 className="text-xl font-semibold text-on-surface">{file.name}</h2>
+            <p className="text-sm text-text-muted mt-1 capitalize">{file.type} · {formatFileSize(file.size)}</p>
           </div>
           <FileStatusBadge status={file.status} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">ID</span>
-            <p className="font-mono text-xs mt-0.5">{file.id}</p>
+            <span className="text-text-muted">ID</span>
+            <p className="font-mono text-xs mt-0.5 text-on-surface">{file.id}</p>
           </div>
           <div>
-            <span className="text-gray-500">Upload Date</span>
-            <p className="mt-0.5">{formatDate(file.uploadDate)}</p>
+            <span className="text-text-muted">Upload Date</span>
+            <p className="mt-0.5 text-on-surface">{formatDate(file.uploadDate)}</p>
           </div>
           <div>
-            <span className="text-gray-500">Updated</span>
-            <p className="mt-0.5">{formatDate(file.updatedAt)}</p>
+            <span className="text-text-muted">Updated</span>
+            <p className="mt-0.5 text-on-surface">{formatDate(file.updatedAt)}</p>
           </div>
         </div>
 
         {file.tags.length > 0 && (
           <div className="mt-4">
-            <span className="text-sm text-gray-500">Tags</span>
+            <span className="text-sm text-text-muted">Tags</span>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {file.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{tag}</span>
+                <span key={tag} className="text-xs glass-card px-2 py-0.5 rounded text-on-surface-variant">{tag}</span>
               ))}
             </div>
           </div>
         )}
 
         {file.moderationReason && (
-          <div className="mt-4 p-3 bg-red-50 rounded-lg">
-            <span className="text-sm font-medium text-red-700">Moderation Reason:</span>
-            <p className="text-sm text-red-600 mt-0.5">{file.moderationReason}</p>
+          <div className="mt-4 p-3 glass-card border-error/30 bg-error/5 rounded-lg">
+            <span className="text-sm font-medium text-error">Moderation Reason:</span>
+            <p className="text-sm text-error mt-0.5">{file.moderationReason}</p>
           </div>
         )}
       </Card>
 
       {(file.status === 'upload_initiated' || file.status === 'scan_in_progress') && (
-        <Card className="p-6 space-y-4">
-          <h3 className="font-medium text-gray-900">Moderation Action</h3>
+        <Card className="space-y-4">
+          <h3 className="font-medium text-on-surface">Moderation Action</h3>
           {actionError && <ErrorAlert message={actionError} onRetry={() => setActionError(null)} />}
           {actionSuccess && <SuccessAlert message={actionSuccess} />}
 
@@ -168,7 +168,7 @@ export default function FileDetailPage() {
       )}
 
       <div className="text-center">
-        <button onClick={() => router.push('/files')} className="text-sm text-gray-500 hover:text-gray-700">
+        <button onClick={() => router.push('/files')} className="text-sm text-text-muted hover:text-on-surface transition-colors">
           ← Back to Files
         </button>
       </div>

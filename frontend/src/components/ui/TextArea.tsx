@@ -11,20 +11,20 @@ export default function TextArea({ label, error, className, id, ...props }: Text
   return (
     <div>
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={id} className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
           {label}
         </label>
       )}
       <textarea
         id={id}
         className={cn(
-          'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-lyra-500 focus:outline-none focus:ring-1 focus:ring-lyra-500 min-h-[100px]',
-          error && 'border-red-500',
+          'w-full bg-black/40 border border-glass-border rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 transition-all min-h-[100px] resize-none',
+          error && 'border-error focus:border-error focus:ring-error',
           className
         )}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-error">{error}</p>}
     </div>
   );
 }

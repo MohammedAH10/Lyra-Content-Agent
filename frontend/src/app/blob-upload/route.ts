@@ -22,6 +22,7 @@ export async function POST(request: Request) {
           'application/pdf',
           'text/plain',
         ],
+        maximumSizeInBytes: 50 * 1024 * 1024,
         addRandomSuffix: true,
       }),
       onUploadCompleted: async () => {},

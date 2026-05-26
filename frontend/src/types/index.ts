@@ -14,7 +14,7 @@ export interface FileListResponse extends ApiResponse<FileRecord[]> {
 
 export type FileType = 'image' | 'video' | 'audio' | 'document';
 export type FileStatus = 'upload_initiated' | 'scan_in_progress' | 'approved' | 'rejected';
-export type Tone = 'professional' | 'casual' | 'excited';
+export type Tone = 'professional' | 'casual' | 'hype' | 'witty' | 'academic';
 
 export interface FileRecord {
   id: string;

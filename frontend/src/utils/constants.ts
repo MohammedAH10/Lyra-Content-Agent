@@ -1,6 +1,6 @@
 export const FILE_TYPES = ['image', 'video', 'audio', 'document'] as const;
 export const FILE_STATUSES = ['upload_initiated', 'scan_in_progress', 'approved', 'rejected'] as const;
-export const TONES = ['professional', 'casual', 'excited'] as const;
+export const TONES = ['professional', 'casual', 'hype', 'witty', 'academic'] as const;
 
 export const STATUS_LABELS: Record<string, string> = {
   upload_initiated: 'Upload Initiated',
@@ -19,5 +19,7 @@ export const STATUS_COLORS: Record<string, string> = {
 export const TONE_LABELS: Record<string, string> = {
   professional: 'Professional',
   casual: 'Casual',
-  excited: 'Excited',
+  hype: 'Hype',
+  witty: 'Witty',
+  academic: 'Academic',
 };

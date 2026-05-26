@@ -45,8 +45,8 @@ export default function FilesPage() {
   useEffect(() => { loadFiles(); }, [loadFiles]);
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
+    <div className="space-y-stack-lg">
+      <Card>
         <FileFilterBar
           type={type}
           status={status}
@@ -58,10 +58,10 @@ export default function FilesPage() {
 
       {error && <ErrorAlert message={error} onRetry={loadFiles} />}
 
-      {loading && <Card className="p-6"><Spinner /></Card>}
+      {loading && <Card><Spinner /></Card>}
 
       {!loading && files.length === 0 && (
-        <Card className="p-6">
+        <Card>
           <EmptyState
             title="No files found"
             description={type || status ? 'Try changing your filters.' : 'Upload your first file to get started.'}
@@ -73,9 +73,9 @@ export default function FilesPage() {
       )}
 
       {!loading && files.length > 0 && (
-        <Card className="p-6">
+        <Card>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-500">{count} file{count !== 1 ? 's' : ''} found</p>
+            <p className="text-sm text-text-muted">{count} file{count !== 1 ? 's' : ''} found</p>
           </div>
           <FileTable files={files} />
         </Card>

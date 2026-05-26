@@ -17,12 +17,12 @@ export default function Button({
   className,
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const base = 'inline-flex items-center justify-center font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
   const variants = {
-    primary: 'bg-lyra-600 text-white hover:bg-lyra-700',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
-    ghost: 'text-gray-600 hover:bg-gray-100',
+    primary: 'bg-gradient-to-r from-neon-violet to-neon-cyan text-white neon-glow-violet hover:brightness-110',
+    secondary: 'glass-card text-on-surface hover:brightness-125',
+    danger: 'bg-gradient-to-r from-neon-pink to-red-500 text-white hover:brightness-110',
+    ghost: 'text-text-muted hover:text-on-surface hover:bg-white/5',
   };
   const sizes = {
     sm: 'px-3 py-1.5 text-sm',

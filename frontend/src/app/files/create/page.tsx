@@ -17,6 +17,7 @@ import { upload } from '@vercel/blob/client';
 export default function CreateFilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -32,12 +33,19 @@ export default function CreateFilePage() {
     file: File;
   }) => {
     setLoading(true);
+    setUploadProgress(0);
     setError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
     try {
       const blob = await upload(`media/${data.name}`, data.file, {
         access: 'public',
         handleUploadUrl: '/blob-upload',
+        onUploadProgress: (progress) => {
+          setUploadProgress(progress.percentage);
+        },
       });
+      clearTimeout(timeoutId);
 
       const res = await createFile({
         name: data.name,
@@ -54,9 +62,14 @@ export default function CreateFilePage() {
         setError(res.error?.message || 'Failed to create file');
       }
     } catch (err: any) {
-      setError(err?.error?.message || err?.message || 'Something went wrong');
+      if (err.name === 'AbortError') {
+        setError('Upload timed out. Please try a smaller file or check your connection.');
+      } else {
+        setError(err?.error?.message || err?.message || 'Something went wrong');
+      }
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -105,13 +118,26 @@ export default function CreateFilePage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload File</h2>
-        <p className="text-sm text-gray-500 mb-4">
+    <div className="max-w-lg mx-auto space-y-stack-lg">
+      <Card>
+        <h2 className="font-sora text-headline-lg text-on-surface mb-4">Upload File</h2>
+        <p className="text-sm text-text-muted mb-4">
           Select a file and enter the name you want stored. The original extension and file size are detected automatically.
         </p>
         <FileUploadForm onSubmit={handleSubmit} loading={loading} />
+        {loading && uploadProgress > 0 && (
+          <div className="mt-4">
+            <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-neon-violet to-neon-cyan transition-all duration-300 rounded-full"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-text-muted mt-1 text-center">
+              Uploading... {Math.round(uploadProgress)}%
+            </p>
+          </div>
+        )}
       </Card>
 
       {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
@@ -121,11 +147,11 @@ export default function CreateFilePage() {
       )}
 
       {file && (
-        <Card className="p-4 space-y-4">
+        <Card className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-medium text-gray-900">{file.name}</p>
-              <p className="text-sm text-gray-500 capitalize">{file.type} · {formatFileSize(file.size)}</p>
+              <p className="font-medium text-on-surface">{file.name}</p>
+              <p className="text-sm text-text-muted capitalize">{file.type} · {formatFileSize(file.size)}</p>
             </div>
             <FileStatusBadge status={file.status} />
           </div>

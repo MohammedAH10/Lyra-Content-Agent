@@ -9,7 +9,6 @@ import Button from '@/components/ui/Button';
 import PostGeneratorForm from '@/components/post/PostGeneratorForm';
 import { PostResultCard, VariationCard, HashtagList } from '@/components/post/PostComponents';
 import MediaCard from '@/components/media/MediaCard';
-import { Icon } from '@/components/ui/Icons';
 import { generatePost, recommendMedia, suggestHashtags } from '@/services/ai.service';
 import type { GeneratePostResult, MediaRecommendation } from '@/types';
 
@@ -25,18 +24,18 @@ function Stepper({ activeStep }: { activeStep: FlowStep }) {
   const activeIndex = steps.findIndex((step) => step.id === activeStep);
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="flex gap-2">
       {steps.map((step, index) => (
         <div
           key={step.id}
           className={[
-            'rounded-lg border px-3 py-2 text-sm font-medium',
+            'flex-1 rounded-xl border px-4 py-3 text-sm font-medium text-center transition-all',
             index <= activeIndex
-              ? 'border-lyra-200 bg-lyra-50 text-lyra-700'
-              : 'border-gray-200 bg-white text-gray-400',
+              ? 'border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan'
+              : 'border-glass-border text-text-muted',
           ].join(' ')}
         >
-          <span className="mr-2">{index + 1}</span>
+          <span className="mr-2 text-neon-cyan font-bold">{index + 1}</span>
           {step.label}
         </div>
       ))}
@@ -49,7 +48,7 @@ function PreviewMedia({ recommendation }: { recommendation: MediaRecommendation 
 
   if (!recommendation) {
     return (
-      <div className="h-56 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-500">
+      <div className="h-56 rounded-xl border border-dashed border-glass-border bg-black/20 flex items-center justify-center text-sm text-text-muted">
         No media selected
       </div>
     );
@@ -59,22 +58,22 @@ function PreviewMedia({ recommendation }: { recommendation: MediaRecommendation 
   const showImage = file.type === 'image' && !imageFailed;
 
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+    <div className="glass-card rounded-2xl overflow-hidden">
       {showImage ? (
         <img
           src={file.url}
           alt={file.name}
-          className="h-56 w-full object-cover bg-gray-100"
+          className="h-56 w-full object-cover"
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <div className="h-56 bg-gray-50 flex items-center justify-center text-gray-400">
-          <Icon name={file.type === 'document' ? 'folder' : 'image'} className="w-12 h-12" />
+        <div className="h-56 bg-black/30 flex items-center justify-center text-text-muted">
+          <span className="material-symbols-outlined text-5xl">image</span>
         </div>
       )}
       <div className="p-4">
-        <p className="font-medium text-gray-900">{file.name}</p>
-        <p className="text-sm text-gray-500 capitalize">{file.type}</p>
+        <p className="font-medium text-on-surface">{file.name}</p>
+        <p className="text-sm text-text-muted capitalize">{file.type}</p>
       </div>
     </div>
   );
@@ -163,34 +162,34 @@ export default function GeneratePostPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-stack-lg">
       <Stepper activeStep={step} />
 
       {step === 'content' && (
         <>
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Create Post</h2>
+          <Card>
+            <h2 className="font-sora text-headline-lg text-on-surface mb-4">Create Post</h2>
             <PostGeneratorForm onSubmit={handleGenerateContent} loading={contentLoading} />
           </Card>
 
           {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
-          {contentLoading && <Card className="p-6"><Spinner /></Card>}
+          {contentLoading && <Card><Spinner /></Card>}
 
           {result && (
-            <Card className="p-6 space-y-5">
+            <Card className="space-y-5">
               <div>
-                <h3 className="font-medium text-gray-900 mb-3">Generated Post</h3>
+                <h3 className="font-medium text-on-surface mb-3">Generated Post</h3>
                 <PostResultCard content={result.primary} />
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-900 mb-3">Generated Hashtags</h3>
+                <h3 className="font-medium text-on-surface mb-3">Generated Hashtags</h3>
                 <HashtagList hashtags={hashtags} />
               </div>
 
               {result.variations.length > 0 && (
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Variations</h3>
+                  <h3 className="font-medium text-on-surface mb-3">Variations</h3>
                   <div className="space-y-3">
                     {result.variations.map((variation, index) => (
                       <VariationCard key={index} content={variation} index={index} />
@@ -209,11 +208,11 @@ export default function GeneratePostPage() {
 
       {step === 'media' && (
         <>
-          <Card className="p-6 space-y-4">
+          <Card className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Recommended Media</h2>
-                <p className="text-sm text-gray-500 mt-1">Choose one media item for the final preview.</p>
+                <h2 className="font-sora text-headline-lg text-on-surface">Recommended Media</h2>
+                <p className="text-sm text-text-muted mt-1">Choose one media item for the final preview.</p>
               </div>
               <Button variant="secondary" onClick={() => setStep('content')}>Back</Button>
             </div>
@@ -237,8 +236,8 @@ export default function GeneratePostPage() {
                       type="button"
                       onClick={() => setSelectedMediaId(recommendation.file.id)}
                       className={[
-                        'text-left rounded-xl border-2 transition-colors',
-                        isSelected ? 'border-lyra-500' : 'border-transparent',
+                        'text-left rounded-2xl transition-all hover:scale-[1.02]',
+                        isSelected ? 'ring-2 ring-neon-cyan' : '',
                       ].join(' ')}
                     >
                       <MediaCard recommendation={recommendation} />
@@ -261,11 +260,11 @@ export default function GeneratePostPage() {
       )}
 
       {step === 'preview' && result && (
-        <Card className="p-6 space-y-5">
+        <Card className="space-y-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Post Preview</h2>
-              <p className="text-sm text-gray-500 mt-1">Final content layout with selected media and hashtags.</p>
+              <h2 className="font-sora text-headline-lg text-on-surface">Post Preview</h2>
+              <p className="text-sm text-text-muted mt-1">Final content layout with selected media and hashtags.</p>
             </div>
             <Button variant="secondary" onClick={() => setStep('media')}>Back</Button>
           </div>
