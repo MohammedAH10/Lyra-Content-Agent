@@ -86,11 +86,11 @@ export default function MobileNav() {
 
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 z-50 lg:hidden w-10 h-10 rounded-full bg-neon-violet/90 backdrop-blur-md border border-neon-violet/50 shadow-[0_4px_20px_rgba(139,92,246,0.4)] flex items-center justify-center text-white active:scale-90 transition-all"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 lg:hidden h-7 px-6 rounded-t-lg bg-deep-obsidian/80 backdrop-blur-md border-t border-l border-r border-glass-border flex items-center justify-center text-text-muted hover:text-on-surface active:scale-95 transition-all"
         aria-label={open ? 'Close navigation' : 'Open navigation'}
       >
-        <span className="material-symbols-outlined text-xl">
-          {open ? 'close' : 'menu'}
+        <span className="material-symbols-outlined text-lg">
+          {open ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
         </span>
       </button>
     </>
