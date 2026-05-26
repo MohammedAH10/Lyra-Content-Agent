@@ -49,9 +49,9 @@ export const createFileFromUpload = async (input: CreateFileFromUploadInput): Pr
       tags: input.tags,
       data: input.data,
       status: 'upload_initiated',
-      url: '',
+      url: '_',
     });
-    file.url = `/api/files/${file._id.toString()}/data`;
+    file.set('url', `/api/files/${file._id.toString()}/data`);
     await file.save();
     return file;
   } catch (error: unknown) {

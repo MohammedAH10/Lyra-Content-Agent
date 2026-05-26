@@ -18,7 +18,7 @@ export default function FileFilterBar({
   onCreateNew: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
       <Select
         value={type}
         onChange={(e) => onTypeChange(e.target.value)}
@@ -26,7 +26,7 @@ export default function FileFilterBar({
           { value: '', label: 'All Types' },
           ...FILE_TYPES.map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) })),
         ]}
-        className="w-40"
+        className="w-full sm:w-40"
       />
       <Select
         value={status}
@@ -35,10 +35,10 @@ export default function FileFilterBar({
           { value: '', label: 'Approved Only' },
           ...FILE_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
         ]}
-        className="w-44"
+        className="w-full sm:w-44"
       />
-      <div className="ml-auto">
-        <Button onClick={onCreateNew} size="sm">
+      <div className="sm:ml-auto">
+        <Button onClick={onCreateNew} size="sm" className="w-full sm:w-auto">
           + New File
         </Button>
       </div>
