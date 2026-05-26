@@ -7,6 +7,7 @@ export interface FileAttrs {
   type: FileType;
   size: number;
   url: string;
+  data?: Buffer;
   tags?: string[];
   uploadDate?: Date;
   status?: FileStatus;
@@ -19,6 +20,7 @@ export interface FileDocument extends Document {
   type: FileType;
   size: number;
   url: string;
+  data?: Buffer;
   tags: string[];
   uploadDate: Date;
   status: FileStatus;

@@ -20,6 +20,10 @@ const fileSchema = new Schema<FileDocument>(
       required: true,
       min: 0,
     },
+    data: {
+      type: Buffer,
+      required: false,
+    },
     url: {
       type: String,
       required: true,

@@ -9,10 +9,9 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import FileUploadForm from '@/components/files/FileUploadForm';
 import FileStatusBadge from '@/components/files/FileStatusBadge';
-import { createFile, updateFileStatus } from '@/services/files.service';
+import { createFileFromUpload, updateFileStatus } from '@/services/files.service';
 import { formatFileSize } from '@/utils/formatters';
 import type { FileRecord, FileType } from '@/types';
-import { upload } from '@vercel/blob/client';
 
 export default function CreateFilePage() {
   const router = useRouter();
@@ -38,22 +37,12 @@ export default function CreateFilePage() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
     try {
-      const blob = await upload(`media/${data.name}`, data.file, {
-        access: 'public',
-        handleUploadUrl: '/blob-upload',
-        onUploadProgress: (progress) => {
-          setUploadProgress(progress.percentage);
-        },
-      });
-      clearTimeout(timeoutId);
-
-      const res = await createFile({
+      const res = await createFileFromUpload({
         name: data.name,
-        type: data.type,
-        size: data.size,
-        url: blob.url,
+        file: data.file,
         tags: data.tags,
       });
+      clearTimeout(timeoutId);
       if (res.success && res.data) {
         setFile(res.data);
         setRejectReason('');
@@ -62,6 +51,7 @@ export default function CreateFilePage() {
         setError(res.error?.message || 'Failed to create file');
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       if (err.name === 'AbortError') {
         setError('Upload timed out. Please try a smaller file or check your connection.');
       } else {
@@ -151,7 +141,7 @@ export default function CreateFilePage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-medium text-on-surface">{file.name}</p>
-              <p className="text-sm text-text-muted capitalize">{file.type} · {formatFileSize(file.size)}</p>
+              <p className="text-sm text-text-muted capitalize">{file.type} &middot; {formatFileSize(file.size)}</p>
             </div>
             <FileStatusBadge status={file.status} />
           </div>

@@ -6,6 +6,14 @@ import logger from '../utils/logger';
 
 type CreateFileInput = Omit<FileAttrs, 'status' | 'uploadDate' | 'moderationReason'>;
 
+export type CreateFileFromUploadInput = {
+  name: string;
+  type: FileType;
+  size: number;
+  tags: string[];
+  data: Buffer;
+};
+
 type ListFilesFilters = {
   type?: FileType;
   status?: FileStatus;
@@ -22,6 +30,30 @@ export const createFile = async (input: CreateFileInput): Promise<FileDocument> 
       ...input,
       status: 'upload_initiated',
     });
+  } catch (error: unknown) {
+    if (error instanceof Error && (error as any).name === 'MongoServerError') {
+      throw new AppError(500, 'DB_ERROR', 'Failed to save file record to database.', {
+        originalError: error.message,
+      });
+    }
+    throw error;
+  }
+};
+
+export const createFileFromUpload = async (input: CreateFileFromUploadInput): Promise<FileDocument> => {
+  try {
+    const file = await File.create({
+      name: input.name,
+      type: input.type,
+      size: input.size,
+      tags: input.tags,
+      data: input.data,
+      status: 'upload_initiated',
+      url: '',
+    });
+    file.url = `/api/files/${file._id.toString()}/data`;
+    await file.save();
+    return file;
   } catch (error: unknown) {
     if (error instanceof Error && (error as any).name === 'MongoServerError') {
       throw new AppError(500, 'DB_ERROR', 'Failed to save file record to database.', {

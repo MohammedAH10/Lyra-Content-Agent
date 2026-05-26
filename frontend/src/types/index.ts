@@ -60,6 +60,12 @@ export interface CreateFilePayload {
   tags?: string[];
 }
 
+export interface CreateFileUploadPayload {
+  name: string;
+  file: File;
+  tags?: string[];
+}
+
 export interface UpdateStatusPayload {
   status: 'approved' | 'rejected';
   moderationReason?: string;

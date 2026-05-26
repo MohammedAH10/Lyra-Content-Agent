@@ -4,6 +4,7 @@ import type {
   FileListResponse,
   FileRecord,
   CreateFilePayload,
+  CreateFileUploadPayload,
   UpdateStatusPayload,
 } from '@/types';
 
@@ -29,4 +30,27 @@ export async function updateFileStatus(
   payload: UpdateStatusPayload
 ): Promise<ApiResponse<FileRecord>> {
   return api.patch(`/files/${id}/status`, payload);
+}
+
+export async function createFileFromUpload(
+  payload: CreateFileUploadPayload
+): Promise<ApiResponse<FileRecord>> {
+  const formData = new FormData();
+  formData.append('name', payload.name);
+  formData.append('file', payload.file);
+  if (payload.tags && payload.tags.length > 0) {
+    formData.append('tags', payload.tags.join(','));
+  }
+
+  const res = await fetch('/api/files/upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw body;
+  }
+
+  return res.json();
 }
