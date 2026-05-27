@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
         <Header />
-        <main className="flex-1 px-margin-page py-stack-md lg:py-stack-lg pb-10 lg:pb-12 overflow-auto max-w-container-max mx-auto w-full">
+        <main className="flex-1 px-margin-page py-stack-md lg:py-stack-lg pb-20 lg:pb-12 overflow-auto max-w-container-max mx-auto w-full">
           {children}
         </main>
       </div>
