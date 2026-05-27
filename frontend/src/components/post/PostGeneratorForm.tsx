@@ -91,7 +91,6 @@ export default function PostGeneratorForm({
       </div>
 
       <Button type="submit" loading={loading} className="w-full md:w-auto px-12 py-4 text-lg gap-3">
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
         Generate Post
       </Button>
     </form>

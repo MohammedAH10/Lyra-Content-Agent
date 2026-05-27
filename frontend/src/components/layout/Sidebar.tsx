@@ -6,10 +6,10 @@ import { cn } from '@/utils/formatters';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/generate-post', label: 'Create', icon: 'auto_awesome' },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'tag' },
-  { href: '/recommend-media', label: 'Media', icon: 'perm_media' },
-  { href: '/files', label: 'Library', icon: 'folder_open' },
+  { href: '/generate-post', label: 'Create Post', icon: 'edit' },
+  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'sell' },
+  { href: '/recommend-media', label: 'Media', icon: 'media' },
+  { href: '/files', label: 'Library', icon: 'library' },
 ];
 
 export default function Sidebar() {
