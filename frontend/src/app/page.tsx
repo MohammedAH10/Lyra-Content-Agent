@@ -65,10 +65,10 @@ export default function Dashboard() {
             <Link key={f.href} href={f.href}>
               <div className="glass-card p-stack-md rounded-2xl group cursor-pointer relative overflow-hidden h-64 flex flex-col justify-end transition-all hover:scale-[1.02]">
                 <div
-                  className="absolute top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-all group-hover:text-white"
+                  className="absolute top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-all group-hover:text-white font-bold text-headline-lg"
                   style={{ backgroundColor: f.bg, color: f.color, border: `1px solid ${f.border}` }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>{f.icon}</span>
+                  {f.title[0]}
                 </div>
                 <div>
                   <h3 className="font-sora text-headline-lg text-on-surface mb-2">{f.title}</h3>
@@ -80,7 +80,7 @@ export default function Dashboard() {
           <div className="md:col-span-2 glass-card p-stack-sm rounded-2xl border-neon-cyan/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-2 rounded-lg bg-surface-container-high">
-                <span className="material-symbols-outlined text-neon-cyan">api</span>
+                <span className="text-neon-cyan font-bold text-sm">API</span>
               </div>
               <div>
                 <p className="text-xs text-text-muted uppercase tracking-tighter">Endpoint Status</p>
@@ -131,7 +131,7 @@ export default function Dashboard() {
           <Card className="h-48 flex flex-col items-center justify-center relative overflow-hidden">
             <div className="animate-ping absolute w-24 h-24 bg-neon-violet/20 rounded-full" />
             <div className="relative z-10 flex flex-col items-center">
-              <span className="material-symbols-outlined text-4xl text-neon-violet mb-2">psychology</span>
+              <span className="text-3xl text-neon-violet mb-2 font-bold">AI</span>
               <p className="text-label-sm uppercase tracking-widest text-text-muted">Engine Calibrating...</p>
             </div>
           </Card>

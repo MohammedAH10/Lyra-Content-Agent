@@ -21,12 +21,12 @@ export default function MediaCard({ recommendation }: { recommendation: MediaRec
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-neon-cyan/20 backdrop-blur-md border border-neon-cyan text-neon-cyan font-bold text-label-sm flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">bolt</span> {score}% Match
+            {score}% Match
           </div>
         </div>
       ) : (
         <div className="h-32 bg-black/30 flex items-center justify-center text-text-muted">
-          <span className="material-symbols-outlined text-4xl">image</span>
+          <span className="text-3xl font-bold">[image]</span>
         </div>
       )}
 

@@ -20,15 +20,6 @@ export default function Header() {
       <h1 className="font-sora text-headline-lg-mobile font-bold bg-gradient-to-r from-neon-violet to-neon-cyan bg-clip-text text-transparent">
         Amiri
       </h1>
-      <div className="flex items-center gap-4">
-        <a
-          href="https://lyra-content-agent.vercel.app"
-          target="_blank"
-          className="flex items-center gap-2 text-on-surface-variant hover:brightness-125 transition-all"
-        >
-          <span className="material-symbols-outlined">api</span>
-        </a>
-      </div>
     </header>
   );
 }

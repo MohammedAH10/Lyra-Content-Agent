@@ -68,7 +68,7 @@ function PreviewMedia({ recommendation }: { recommendation: MediaRecommendation 
         />
       ) : (
         <div className="h-56 bg-black/30 flex items-center justify-center text-text-muted">
-          <span className="material-symbols-outlined text-5xl">image</span>
+          <span className="text-3xl font-bold">[img]</span>
         </div>
       )}
       <div className="p-4">

@@ -10,7 +10,7 @@ export default function EmptyState({
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 mx-auto glass-card rounded-2xl flex items-center justify-center mb-4">
-        <span className="material-symbols-outlined text-3xl text-text-muted">inbox</span>
+        <span className="text-3xl text-text-muted font-bold">[ ]</span>
       </div>
       <h3 className="text-lg font-semibold text-on-surface">{title}</h3>
       {description && <p className="mt-1 text-sm text-text-muted">{description}</p>}

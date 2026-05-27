@@ -37,7 +37,6 @@ export default function HashtagInputForm({
       </div>
       <div className="flex gap-3">
         <Button type="submit" loading={loading}>
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
           Generate Tags
         </Button>
       </div>

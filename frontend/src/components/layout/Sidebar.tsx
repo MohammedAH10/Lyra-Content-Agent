@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/formatters';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/generate-post', label: 'Create', icon: 'edit' },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'sell' },
-  { href: '/recommend-media', label: 'Media', icon: 'photo' },
-  { href: '/files', label: 'Library', icon: 'library' },
+  { href: '/', label: 'Dashboard' },
+  { href: '/generate-post', label: 'Create' },
+  { href: '/suggest-hashtags', label: 'Hashtags' },
+  { href: '/recommend-media', label: 'Media' },
+  { href: '/files', label: 'Library' },
 ];
 
 export default function Sidebar() {
@@ -19,7 +19,7 @@ export default function Sidebar() {
     <aside className="h-screen w-64 fixed left-0 top-0 hidden lg:flex flex-col bg-glass-surface backdrop-blur-[24px] border-r border-glass-border shadow-2xl shadow-deep-obsidian z-50 py-stack-sm">
       <div className="px-6 mb-10 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-violet to-neon-cyan flex items-center justify-center neon-glow-violet">
-          <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+          <span className="text-white font-bold text-lg">A</span>
         </div>
         <div>
           <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">Amiri AI</h1>
@@ -40,7 +40,6 @@ export default function Sidebar() {
                   : 'text-text-muted hover:text-on-surface hover:bg-white/5'
               )}
             >
-              <span className="material-symbols-outlined">{item.icon}</span>
               <span className="font-medium">{item.label}</span>
             </Link>
           );
@@ -56,7 +55,6 @@ export default function Sidebar() {
             target="_blank"
             className="flex items-center gap-3 px-4 py-2 rounded-lg text-text-muted hover:text-on-surface hover:bg-white/5 transition-colors"
           >
-            <span className="material-symbols-outlined">monitor_heart</span>
             <span className="text-sm">API Status</span>
           </a>
         </div>

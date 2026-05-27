@@ -107,7 +107,7 @@ export default function FileUploadForm({
           onClick={() => fileInputRef.current?.click()}
           className="border-2 border-dashed border-glass-border rounded-xl p-6 text-center cursor-pointer hover:border-neon-cyan/50 transition-colors bg-black/20"
         >
-          <span className="material-symbols-outlined text-3xl text-text-muted">upload_file</span>
+          <span className="text-3xl text-text-muted font-bold">+</span>
           <p className="mt-2 text-sm text-text-muted">
             {selectedFile ? selectedFile.name : 'Click to select a file'}
           </p>

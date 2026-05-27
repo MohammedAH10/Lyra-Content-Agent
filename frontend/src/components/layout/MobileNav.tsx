@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/formatters';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/generate-post', label: 'Create', icon: 'edit' },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'sell' },
-  { href: '/recommend-media', label: 'Media', icon: 'photo' },
-  { href: '/files', label: 'Library', icon: 'library' },
+  { href: '/', label: 'Dashboard' },
+  { href: '/generate-post', label: 'Create' },
+  { href: '/suggest-hashtags', label: 'Hashtags' },
+  { href: '/recommend-media', label: 'Media' },
+  { href: '/files', label: 'Library' },
 ];
 
 export default function MobileNav() {
@@ -54,7 +54,7 @@ export default function MobileNav() {
           )}
           <div
             ref={scrollRef}
-            className="flex overflow-x-auto gap-1 py-2 px-2 scrollbar-none snap-x snap-mandatory"
+            className="flex overflow-x-auto gap-1 py-3 px-2 scrollbar-none snap-x snap-mandatory"
           >
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -64,17 +64,13 @@ export default function MobileNav() {
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors text-center snap-start shrink-0',
-                    isActive ? 'text-neon-cyan' : 'text-text-muted hover:text-on-surface'
+                    'flex items-center justify-center px-4 py-2 rounded-lg transition-colors text-center snap-start shrink-0',
+                    isActive
+                      ? 'text-neon-cyan bg-neon-cyan/10'
+                      : 'text-text-muted hover:text-on-surface hover:bg-white/5'
                   )}
                 >
-                  <span
-                    className="material-symbols-outlined text-lg"
-                    style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                  >
-                    {item.icon}
-                  </span>
-                  <span className="font-label-sm text-[9px] tracking-wide leading-tight whitespace-nowrap">
+                  <span className="font-label-sm text-sm tracking-wide whitespace-nowrap font-medium">
                     {item.label}
                   </span>
                 </Link>
@@ -89,8 +85,8 @@ export default function MobileNav() {
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 lg:hidden h-7 px-6 rounded-t-lg bg-deep-obsidian/80 backdrop-blur-md border-t border-l border-r border-glass-border flex items-center justify-center text-text-muted hover:text-on-surface active:scale-95 transition-all"
         aria-label={open ? 'Close navigation' : 'Open navigation'}
       >
-        <span className="material-symbols-outlined text-lg">
-          {open ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
+        <span className="text-lg font-bold">
+          {open ? '\u25BC' : '\u25B2'}
         </span>
       </button>
     </>
