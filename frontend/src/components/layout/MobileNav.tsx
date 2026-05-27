@@ -7,10 +7,10 @@ import { cn } from '@/utils/formatters';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/generate-post', label: 'Create Post', icon: 'edit' },
-  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'local_offer' },
-  { href: '/recommend-media', label: 'Recommend Media', icon: 'collections' },
-  { href: '/files', label: 'File Library', icon: 'folder' },
+  { href: '/generate-post', label: 'Create', icon: 'edit' },
+  { href: '/suggest-hashtags', label: 'Hashtags', icon: 'sell' },
+  { href: '/recommend-media', label: 'Media', icon: 'photo' },
+  { href: '/files', label: 'Library', icon: 'library' },
 ];
 
 export default function MobileNav() {

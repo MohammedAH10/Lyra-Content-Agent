@@ -6,9 +6,9 @@ import { cn } from '@/utils/formatters';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/generate-post', label: 'Create Post', icon: 'edit' },
+  { href: '/generate-post', label: 'Create', icon: 'edit' },
   { href: '/suggest-hashtags', label: 'Hashtags', icon: 'sell' },
-  { href: '/recommend-media', label: 'Media', icon: 'media' },
+  { href: '/recommend-media', label: 'Media', icon: 'photo' },
   { href: '/files', label: 'Library', icon: 'library' },
 ];
 
