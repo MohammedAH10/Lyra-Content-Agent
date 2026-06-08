@@ -2,6 +2,7 @@ import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 import { callWithFallback, parseAiJson } from './modelRouter.service';
 import { fallbackGeneratePost, fallbackSuggestHashtags } from './deterministicTemplates';
+import { logAiRequest } from './auditLog.service';
 
 export type Tone = 'professional' | 'casual' | 'excited';
 export type PostFormat = 'short' | 'long' | 'bullet';
@@ -238,8 +239,11 @@ export const generatePost = async (
   topic: string,
   tone: Tone = 'professional',
   format: PostFormat = 'short',
+  userId?: string,
 ): Promise<GeneratePostResult> => {
+  const startTime = Date.now();
   const systemPrompt = buildGeneratePostPrompt(topic, tone, format);
+  const inputSummary = `Generate post: topic="${topic}", tone=${tone}, format=${format}`;
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -249,8 +253,21 @@ export const generatePost = async (
 
       if (!isValidGeneratePostResult(parsed)) {
         logger.error('AI response missing expected fields, falling back to template', { parsed });
-        return fallbackGeneratePost(topic, tone, format);
+        const fallback = fallbackGeneratePost(topic, tone, format);
+        await logAiRequest({
+          userId, requestType: 'generate', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing expected fields',
+        });
+        return fallback;
       }
+
+      await logAiRequest({
+        userId, requestType: 'generate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
 
       return {
         content: parsed.content,
@@ -261,12 +278,26 @@ export const generatePost = async (
       };
     } catch {
       logger.warn('Failed to parse AI response, using deterministic template');
-      return fallbackGeneratePost(topic, tone, format);
+      const fallback = fallbackGeneratePost(topic, tone, format);
+      await logAiRequest({
+        userId, requestType: 'generate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
     }
   }
 
   logger.warn('AI providers unavailable, returning deterministic fallback template');
-  return fallbackGeneratePost(topic, tone, format);
+  const fallback = fallbackGeneratePost(topic, tone, format);
+  await logAiRequest({
+    userId, requestType: 'generate', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
 };
 
 export const regeneratePost = async (
@@ -275,7 +306,9 @@ export const regeneratePost = async (
   tone: Tone = 'professional',
   format: PostFormat = 'short',
   additionalInstructions?: string,
+  userId?: string,
 ): Promise<GeneratePostResult> => {
+  const startTime = Date.now();
   const systemPrompt = buildRegeneratePrompt(
     previousContent,
     topic,
@@ -283,6 +316,7 @@ export const regeneratePost = async (
     format,
     additionalInstructions,
   );
+  const inputSummary = `Regenerate: topic="${topic}", tone=${tone}, format=${format}`;
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -292,8 +326,21 @@ export const regeneratePost = async (
 
       if (!isValidGeneratePostResult(parsed)) {
         logger.error('AI response missing expected fields, falling back to template', { parsed });
-        return fallbackGeneratePost(topic, tone, format);
+        const fallback = fallbackGeneratePost(topic, tone, format);
+        await logAiRequest({
+          userId, requestType: 'regenerate', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing expected fields',
+        });
+        return fallback;
       }
+
+      await logAiRequest({
+        userId, requestType: 'regenerate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
 
       return {
         content: parsed.content,
@@ -304,16 +351,35 @@ export const regeneratePost = async (
       };
     } catch {
       logger.warn('Failed to parse AI response, using deterministic template');
-      return fallbackGeneratePost(topic, tone, format);
+      const fallback = fallbackGeneratePost(topic, tone, format);
+      await logAiRequest({
+        userId, requestType: 'regenerate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
     }
   }
 
   logger.warn('AI providers unavailable, returning deterministic fallback template');
-  return fallbackGeneratePost(topic, tone, format);
+  const fallback = fallbackGeneratePost(topic, tone, format);
+  await logAiRequest({
+    userId, requestType: 'regenerate', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
 };
 
-export const suggestHashtags = async (postContent: string): Promise<SuggestHashtagsResult> => {
+export const suggestHashtags = async (
+  postContent: string,
+  userId?: string,
+): Promise<SuggestHashtagsResult> => {
+  const startTime = Date.now();
   const systemPrompt = buildHashtagPrompt(postContent);
+  const inputSummary = `Hashtags: "${postContent.slice(0, 80)}..."`;
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -323,22 +389,54 @@ export const suggestHashtags = async (postContent: string): Promise<SuggestHasht
 
       if (!Array.isArray(parsed.hashtags)) {
         logger.error('AI response missing hashtags array, falling back to keyword extraction', { parsed });
-        return fallbackSuggestHashtags(postContent);
+        const fallback = fallbackSuggestHashtags(postContent);
+        await logAiRequest({
+          userId, requestType: 'hashtags', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing hashtags array',
+        });
+        return fallback;
       }
+
+      await logAiRequest({
+        userId, requestType: 'hashtags', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
 
       return { hashtags: parsed.hashtags };
     } catch {
       logger.warn('Failed to parse AI response, using keyword-based hashtags');
-      return fallbackSuggestHashtags(postContent);
+      const fallback = fallbackSuggestHashtags(postContent);
+      await logAiRequest({
+        userId, requestType: 'hashtags', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
     }
   }
 
   logger.warn('AI providers unavailable, returning keyword-based hashtags');
-  return fallbackSuggestHashtags(postContent);
+  const fallback = fallbackSuggestHashtags(postContent);
+  await logAiRequest({
+    userId, requestType: 'hashtags', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
 };
 
-export const suggestImprovements = async (postContent: string): Promise<SuggestImprovementsResult> => {
+export const suggestImprovements = async (
+  postContent: string,
+  userId?: string,
+): Promise<SuggestImprovementsResult> => {
+  const startTime = Date.now();
   const systemPrompt = buildImprovementsPrompt(postContent);
+  const inputSummary = `Improvements: "${postContent.slice(0, 80)}..."`;
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -348,22 +446,51 @@ export const suggestImprovements = async (postContent: string): Promise<SuggestI
 
       if (!Array.isArray(parsed.improvements) || parsed.improvements.length === 0) {
         logger.error('AI response missing improvements array, falling back', { parsed });
+        await logAiRequest({
+          userId, requestType: 'improve', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing improvements array',
+        });
         return { improvements: ['AI generation unavailable — no suggestions available.'] };
       }
+
+      await logAiRequest({
+        userId, requestType: 'improve', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
 
       return { improvements: parsed.improvements };
     } catch {
       logger.warn('Failed to parse AI response, returning fallback');
+      await logAiRequest({
+        userId, requestType: 'improve', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
       return { improvements: ['AI generation unavailable — no suggestions available.'] };
     }
   }
 
   logger.warn('AI providers unavailable, returning fallback');
+  await logAiRequest({
+    userId, requestType: 'improve', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
   return { improvements: ['AI generation unavailable — no suggestions available.'] };
 };
 
-export const relatedPostIdeas = async (postContent: string): Promise<RelatedIdeasResult> => {
+export const relatedPostIdeas = async (
+  postContent: string,
+  userId?: string,
+): Promise<RelatedIdeasResult> => {
+  const startTime = Date.now();
   const systemPrompt = buildRelatedIdeasPrompt(postContent);
+  const inputSummary = `Related ideas: "${postContent.slice(0, 80)}..."`;
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -373,16 +500,40 @@ export const relatedPostIdeas = async (postContent: string): Promise<RelatedIdea
 
       if (!Array.isArray(parsed.relatedIdeas) || parsed.relatedIdeas.length === 0) {
         logger.error('AI response missing relatedIdeas array, falling back', { parsed });
+        await logAiRequest({
+          userId, requestType: 'related', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing relatedIdeas array',
+        });
         return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
       }
+
+      await logAiRequest({
+        userId, requestType: 'related', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
 
       return { relatedIdeas: parsed.relatedIdeas };
     } catch {
       logger.warn('Failed to parse AI response, returning fallback');
+      await logAiRequest({
+        userId, requestType: 'related', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
       return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
     }
   }
 
   logger.warn('AI providers unavailable, returning fallback');
+  await logAiRequest({
+    userId, requestType: 'related', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
   return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
 };

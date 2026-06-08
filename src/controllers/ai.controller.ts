@@ -11,9 +11,9 @@ import { recommendMediaForPost } from '../services/recommendation.service';
 
 export const recommendMedia: RequestHandler = async (req, res, next) => {
   try {
-    const { postContent, type, limit } = req.body;
+    const { postContent, type, limit, userId } = req.body;
 
-    const result = await recommendMediaForPost(postContent, type, limit);
+    const result = await recommendMediaForPost(postContent, type, limit, userId);
 
     res.status(200).json({
       success: true,
@@ -29,9 +29,9 @@ export const recommendMedia: RequestHandler = async (req, res, next) => {
 
 export const generatePost: RequestHandler = async (req, res, next) => {
   try {
-    const { topic, tone, format } = req.body;
+    const { topic, tone, format, userId } = req.body;
 
-    const result = await generatePostService(topic, tone, format);
+    const result = await generatePostService(topic, tone, format, userId);
 
     res.status(200).json({
       success: true,
@@ -50,7 +50,7 @@ export const generatePost: RequestHandler = async (req, res, next) => {
 
 export const regeneratePost: RequestHandler = async (req, res, next) => {
   try {
-    const { previousContent, topic, tone, format, additionalInstructions } = req.body;
+    const { previousContent, topic, tone, format, additionalInstructions, userId } = req.body;
 
     const result = await regeneratePostService(
       previousContent,
@@ -58,6 +58,7 @@ export const regeneratePost: RequestHandler = async (req, res, next) => {
       tone,
       format,
       additionalInstructions,
+      userId,
     );
 
     res.status(200).json({
@@ -77,9 +78,9 @@ export const regeneratePost: RequestHandler = async (req, res, next) => {
 
 export const suggestHashtags: RequestHandler = async (req, res, next) => {
   try {
-    const { postContent } = req.body;
+    const { postContent, userId } = req.body;
 
-    const result = await suggestHashtagsService(postContent);
+    const result = await suggestHashtagsService(postContent, userId);
 
     res.status(200).json({
       success: true,
@@ -94,9 +95,9 @@ export const suggestHashtags: RequestHandler = async (req, res, next) => {
 
 export const suggestImprovements: RequestHandler = async (req, res, next) => {
   try {
-    const { postContent } = req.body;
+    const { postContent, userId } = req.body;
 
-    const result = await suggestImprovementsService(postContent);
+    const result = await suggestImprovementsService(postContent, userId);
 
     res.status(200).json({
       success: true,
@@ -111,9 +112,9 @@ export const suggestImprovements: RequestHandler = async (req, res, next) => {
 
 export const relatedPostIdeas: RequestHandler = async (req, res, next) => {
   try {
-    const { postContent } = req.body;
+    const { postContent, userId } = req.body;
 
-    const result = await relatedPostIdeasService(postContent);
+    const result = await relatedPostIdeasService(postContent, userId);
 
     res.status(200).json({
       success: true,

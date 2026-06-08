@@ -1,8 +1,8 @@
 import PostDraft from '../models/PostDraft';
-import AiLog from '../models/AiLog';
 import { PostDraftAttrs, PostDraftDocument } from '../types';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
+import { logAiRequest } from './auditLog.service';
 
 export const createDraft = async (
   attrs: PostDraftAttrs,
@@ -90,8 +90,7 @@ export const acceptDraft = async (
 
   await draft.save();
 
-  // Log the acceptance
-  await AiLog.create({
+  await logAiRequest({
     userId: userId || draft.userId,
     requestType: 'generate',
     inputSummary: `Accepted draft ${id} — ${draft.inputText.slice(0, 100)}`,
