@@ -2,8 +2,21 @@ import OpenAI from 'openai';
 
 import logger from './logger';
 
-const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
-const DEFAULT_MODEL = 'openai/gpt-oss-120b:free';
+export type AiProviderConfig = {
+  provider: 'openai';
+  defaultModel: string;
+  fallbackModel: string;
+  timeoutMs: number;
+  baseUrl: string;
+};
+
+export const aiProviderConfig: AiProviderConfig = {
+  provider: 'openai',
+  defaultModel: process.env.AI_MODEL || 'openai/gpt-oss-120b:free',
+  fallbackModel: 'openai/gpt-oss-20b:free',
+  timeoutMs: Number(process.env.AI_TIMEOUT_MS || 20000),
+  baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+};
 
 export const getAiClient = (): OpenAI => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -15,10 +28,16 @@ export const getAiClient = (): OpenAI => {
 
   return new OpenAI({
     apiKey,
-    baseURL: process.env.OPENROUTER_BASE_URL || DEFAULT_BASE_URL,
+    baseURL: aiProviderConfig.baseUrl,
+    timeout: aiProviderConfig.timeoutMs,
+    maxRetries: 0,
   });
 };
 
-export const getModelId = (): string => {
-  return process.env.AI_MODEL || DEFAULT_MODEL;
+export const getDefaultModel = (): string => {
+  return aiProviderConfig.defaultModel;
+};
+
+export const getFallbackModel = (): string => {
+  return aiProviderConfig.fallbackModel;
 };
