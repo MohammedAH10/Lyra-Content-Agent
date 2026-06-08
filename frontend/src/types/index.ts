@@ -14,7 +14,8 @@ export interface FileListResponse extends ApiResponse<FileRecord[]> {
 
 export type FileType = 'image' | 'video' | 'audio' | 'document';
 export type FileStatus = 'upload_initiated' | 'scan_in_progress' | 'approved' | 'rejected';
-export type Tone = 'professional' | 'casual' | 'hype' | 'witty' | 'academic';
+export type Tone = 'professional' | 'casual' | 'excited';
+export type PostFormat = 'short' | 'long' | 'bullet';
 
 export interface FileRecord {
   id: string;
@@ -30,26 +31,61 @@ export interface FileRecord {
   updatedAt: string;
 }
 
+export interface Variation {
+  label: string;
+  content: string;
+}
+
 export interface GeneratePostResult {
-  primary: string;
-  variations: string[];
-  hashtags: string[];
-}
-
-export interface MediaRecommendation {
-  file: FileRecord;
-  score: number;
-  matchReason: string;
-}
-
-export interface RecommendMediaResult {
-  recommendations: MediaRecommendation[];
-  totalMatched: number;
-  message?: string;
+  content: string;
+  variations: Variation[];
+  improvements: string[];
+  relatedIdeas: string[];
+  fallbackUsed: boolean;
 }
 
 export interface SuggestHashtagsResult {
   hashtags: string[];
+}
+
+export interface SuggestImprovementsResult {
+  improvements: string[];
+}
+
+export interface RelatedIdeasResult {
+  relatedIdeas: string[];
+}
+
+export interface MediaRecommendationResult {
+  recommendations: ScoredRecommendation[];
+  noResultReason: string | null;
+}
+
+export interface ScoredRecommendation {
+  fileId: string;
+  name: string;
+  type: string;
+  score: number;
+  reason: string;
+  url: string;
+  size: number;
+  tags: string[];
+  uploadDate: string;
+}
+
+export interface DraftRecord {
+  id: string;
+  userId: string;
+  inputText: string;
+  tone: Tone;
+  format: PostFormat;
+  generatedContent: GeneratePostResult | null;
+  selectedVariation: string | null;
+  acceptedOutput: string | null;
+  attachedFileIds: string[];
+  status: 'draft' | 'accepted' | 'discarded';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateFilePayload {

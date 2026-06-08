@@ -1,288 +1,300 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useComposerStore } from '@/store/postComposer.store';
+import {
+  generatePost as apiGeneratePost,
+  regeneratePost as apiRegeneratePost,
+  createDraft,
+  acceptDraft,
+} from '@/services/ai.service';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import ErrorAlert from '@/components/ui/ErrorAlert';
-import EmptyState from '@/components/ui/EmptyState';
-import Button from '@/components/ui/Button';
-import PostGeneratorForm from '@/components/post/PostGeneratorForm';
-import { PostResultCard, VariationCard, HashtagList } from '@/components/post/PostComponents';
-import MediaCard from '@/components/media/MediaCard';
-import { generatePost, recommendMedia, suggestHashtags } from '@/services/ai.service';
-import type { GeneratePostResult, MediaRecommendation } from '@/types';
+import GeneratedContent from '@/components/post/GeneratedContent';
+import VariationsPanel from '@/components/post/VariationsPanel';
+import ImprovementsPanel from '@/components/post/ImprovementsPanel';
+import RelatedIdeasPanel from '@/components/post/RelatedIdeasPanel';
+import ActionBar from '@/components/post/ActionBar';
+import AssetPicker from '@/components/files/AssetPicker';
+import type { Tone, PostFormat } from '@/types';
 
-type FlowStep = 'content' | 'media' | 'preview';
-
-const steps: { id: FlowStep; label: string }[] = [
-  { id: 'content', label: 'Post' },
-  { id: 'media', label: 'Media' },
-  { id: 'preview', label: 'Preview' },
+const TONE_OPTIONS: { value: Tone; label: string }[] = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'casual', label: 'Casual' },
+  { value: 'excited', label: 'Excited' },
 ];
 
-function Stepper({ activeStep }: { activeStep: FlowStep }) {
-  const activeIndex = steps.findIndex((step) => step.id === activeStep);
+const FORMAT_OPTIONS: { value: PostFormat; label: string }[] = [
+  { value: 'short', label: 'Short' },
+  { value: 'long', label: 'Long' },
+  { value: 'bullet', label: 'Bullet Points' },
+];
 
-  return (
-    <div className="flex gap-2">
-      {steps.map((step, index) => (
-        <div
-          key={step.id}
-          className={[
-            'flex-1 rounded-xl border px-4 py-3 text-sm font-medium text-center transition-all',
-            index <= activeIndex
-              ? 'border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan'
-              : 'border-glass-border text-text-muted',
-          ].join(' ')}
-        >
-          <span className="mr-2 text-neon-cyan font-bold">{index + 1}</span>
-          {step.label}
-        </div>
-      ))}
-    </div>
-  );
-}
+export default function PostComposerPage() {
+  const {
+    topic,
+    tone,
+    format,
+    result,
+    generating,
+    regenerating,
+    accepting,
+    error,
+    attachedFiles,
+    editedContent,
+    isEditing,
+    setTopic,
+    setTone,
+    setFormat,
+    setResult,
+    setGenerating,
+    setRegenerating,
+    setAccepting,
+    setError,
+    setCurrentDraft,
+    setShowAssetPicker,
+    addAttachedFile,
+    removeAttachedFile,
+    reset,
+  } = useComposerStore();
 
-function PreviewMedia({ recommendation }: { recommendation: MediaRecommendation | null }) {
-  const [imageFailed, setImageFailed] = useState(false);
+  // Reset on mount
+  useEffect(() => {
+    reset();
+  }, []);
 
-  if (!recommendation) {
-    return (
-      <div className="h-56 rounded-xl border border-dashed border-glass-border bg-black/20 flex items-center justify-center text-sm text-text-muted">
-        No media selected
-      </div>
-    );
-  }
+  const handleGenerate = async () => {
+    const trimmed = topic.trim();
+    if (!trimmed) {
+      setError('Please enter a topic');
+      return;
+    }
 
-  const { file } = recommendation;
-  const showImage = file.type === 'image' && !imageFailed;
-
-  return (
-    <div className="glass-card rounded-2xl overflow-hidden">
-      {showImage ? (
-        <img
-          src={file.url}
-          alt={file.name}
-          className="h-56 w-full object-cover"
-          onError={() => setImageFailed(true)}
-        />
-      ) : (
-        <div className="h-56 bg-black/30 flex items-center justify-center text-text-muted">
-          <span className="text-3xl font-bold">[img]</span>
-        </div>
-      )}
-      <div className="p-4">
-        <p className="font-medium text-on-surface">{file.name}</p>
-        <p className="text-sm text-text-muted capitalize">{file.type}</p>
-      </div>
-    </div>
-  );
-}
-
-export default function GeneratePostPage() {
-  const [step, setStep] = useState<FlowStep>('content');
-  const [result, setResult] = useState<GeneratePostResult | null>(null);
-  const [hashtags, setHashtags] = useState<string[]>([]);
-  const [recommendations, setRecommendations] = useState<MediaRecommendation[]>([]);
-  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
-  const [mediaMessage, setMediaMessage] = useState<string | undefined>();
-  const [contentLoading, setContentLoading] = useState(false);
-  const [mediaLoading, setMediaLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const selectedMedia =
-    recommendations.find((rec) => rec.file.id === selectedMediaId) || recommendations[0] || null;
-
-  const handleGenerateContent = async (data: { prompt: string; tone: string; variations: number }) => {
-    setContentLoading(true);
+    setGenerating(true);
     setError(null);
     setResult(null);
-    setHashtags([]);
-    setRecommendations([]);
-    setSelectedMediaId(null);
-    setMediaMessage(undefined);
-    setStep('content');
 
     try {
-      const postRes = await generatePost(data.prompt, data.tone as any, data.variations);
-      if (!postRes.success || !postRes.data) {
-        setError(postRes.error?.message || 'Failed to generate post');
-        return;
-      }
-
-      const hashtagRes = await suggestHashtags(postRes.data.primary);
-      if (!hashtagRes.success || !hashtagRes.data) {
-        setError(hashtagRes.error?.message || 'Failed to generate hashtags');
-        return;
-      }
-
-      setResult(postRes.data);
-      setHashtags(hashtagRes.data.hashtags);
-    } catch (err: any) {
-      setError(err?.error?.message || err?.message || 'Something went wrong');
-    } finally {
-      setContentLoading(false);
-    }
-  };
-
-  const handleRecommendMedia = async () => {
-    if (!result?.primary) return;
-
-    setStep('media');
-    setMediaLoading(true);
-    setError(null);
-    setRecommendations([]);
-    setSelectedMediaId(null);
-    setMediaMessage(undefined);
-
-    try {
-      const mediaRes = await recommendMedia(result.primary);
-      if (mediaRes.success && mediaRes.data) {
-        setRecommendations(mediaRes.data.recommendations);
-        setSelectedMediaId(mediaRes.data.recommendations[0]?.file.id || null);
-        setMediaMessage(mediaRes.data.message);
+      const res = await apiGeneratePost(trimmed, tone, format);
+      if (res.success && res.data) {
+        setResult(res.data);
       } else {
-        setError(mediaRes.error?.message || 'Failed to recommend media');
+        setError(res.error?.message || 'Failed to generate post');
       }
     } catch (err: any) {
-      setError(err?.error?.message || err?.message || 'Something went wrong');
+      setError(err?.message || 'Something went wrong');
     } finally {
-      setMediaLoading(false);
+      setGenerating(false);
     }
   };
 
-  const resetFlow = () => {
-    setStep('content');
-    setResult(null);
-    setHashtags([]);
-    setRecommendations([]);
-    setSelectedMediaId(null);
-    setMediaMessage(undefined);
+  const handleRegenerate = async (additionalInstructions?: string) => {
+    if (!result) return;
+
+    setRegenerating(true);
     setError(null);
+
+    try {
+      const currentContent = editedContent ?? result.content;
+      const res = await apiRegeneratePost(
+        currentContent,
+        topic.trim(),
+        tone,
+        format,
+        additionalInstructions,
+      );
+      if (res.success && res.data) {
+        setResult(res.data);
+      } else {
+        setError(res.error?.message || 'Failed to regenerate');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong');
+    } finally {
+      setRegenerating(false);
+    }
   };
+
+  const handleAccept = async () => {
+    if (!result) return;
+
+    setAccepting(true);
+    setError(null);
+
+    try {
+      const finalContent = editedContent ?? result.content;
+      const selectedLabel = useComposerStore.getState().selectedVariationLabel;
+
+      // Create draft first
+      const draftRes = await createDraft({
+        userId: 'web-user',
+        inputText: topic.trim(),
+        tone,
+        format,
+        generatedContent: result,
+      });
+
+      if (!draftRes.success || !draftRes.data) {
+        setError(draftRes.error?.message || 'Failed to save draft');
+        return;
+      }
+
+      // Accept the draft
+      const acceptRes = await acceptDraft(
+        draftRes.data.id,
+        finalContent,
+        selectedLabel ?? undefined,
+        'web-user',
+      );
+
+      if (acceptRes.success) {
+        setCurrentDraft(acceptRes.data ?? null);
+      } else {
+        setError(acceptRes.error?.message || 'Failed to accept draft');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong');
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const canGenerate = topic.trim().length > 0 && !generating;
 
   return (
     <div className="max-w-4xl mx-auto space-y-stack-lg">
-      <Stepper activeStep={step} />
+      {/* Header */}
+      <Card>
+        <h2 className="font-sora text-headline-lg text-on-surface mb-6">Post Composer</h2>
 
-      {step === 'content' && (
-        <>
-          <Card>
-            <h2 className="font-sora text-headline-lg text-on-surface mb-4">Create Post</h2>
-            <PostGeneratorForm onSubmit={handleGenerateContent} loading={contentLoading} />
-          </Card>
+        {/* Topic input */}
+        <div className="mb-4">
+          <label className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
+            Topic / Content
+          </label>
+          <textarea
+            className="w-full bg-black/40 border border-glass-border rounded-xl px-4 py-3 text-sm text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30 min-h-[80px] resize-y"
+            placeholder="What do you want to post about?"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            disabled={generating || regenerating}
+          />
+        </div>
 
-          {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
-          {contentLoading && <Card><Spinner /></Card>}
+        {/* Tone + Format row */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
+              Tone
+            </label>
+            <select
+              className="w-full bg-black/40 border border-glass-border rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-neon-cyan/50"
+              value={tone}
+              onChange={(e) => setTone(e.target.value as Tone)}
+              disabled={generating || regenerating}
+            >
+              {TONE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
+              Format
+            </label>
+            <select
+              className="w-full bg-black/40 border border-glass-border rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-neon-cyan/50"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as PostFormat)}
+              disabled={generating || regenerating}
+            >
+              {FORMAT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-          {result && (
-            <Card className="space-y-5">
-              <div>
-                <h3 className="font-medium text-on-surface mb-3">Generated Post</h3>
-                <PostResultCard content={result.primary} />
-              </div>
+        {/* Attached files preview */}
+        {attachedFiles.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-label-sm text-neon-violet uppercase tracking-widest mb-1 ml-1">
+              Attached Media ({attachedFiles.length})
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {attachedFiles.map((file) => (
+                <span
+                  key={file.id}
+                  className="inline-flex items-center gap-1 glass-card rounded-lg px-2.5 py-1 text-xs text-on-surface border border-glass-border"
+                >
+                  {file.name}
+                  <button
+                    onClick={() => removeAttachedFile(file.id)}
+                    className="text-text-muted hover:text-error ml-1"
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-              <div>
-                <h3 className="font-medium text-on-surface mb-3">Generated Hashtags</h3>
-                <HashtagList hashtags={hashtags} />
-              </div>
-
-              {result.variations.length > 0 && (
-                <div>
-                  <h3 className="font-medium text-on-surface mb-3">Variations</h3>
-                  <div className="space-y-3">
-                    {result.variations.map((variation, index) => (
-                      <VariationCard key={index} content={variation} index={index} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleRecommendMedia}>Next: Recommend Media</Button>
-              </div>
-            </Card>
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <Button onClick={handleGenerate} disabled={!canGenerate} loading={generating}>
+            Generate
+          </Button>
+          <Button variant="secondary" onClick={() => setShowAssetPicker(true)}>
+            Attach Media
+          </Button>
+          {(result || error || attachedFiles.length > 0) && (
+            <Button variant="ghost" onClick={reset}>
+              Clear
+            </Button>
           )}
-        </>
-      )}
+        </div>
+      </Card>
 
-      {step === 'media' && (
-        <>
-          <Card className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-sora text-headline-lg text-on-surface">Recommended Media</h2>
-                <p className="text-sm text-text-muted mt-1">Choose one media item for the final preview.</p>
-              </div>
-              <Button variant="secondary" onClick={() => setStep('content')}>Back</Button>
-            </div>
-
-            {mediaLoading && <Spinner />}
-
-            {!mediaLoading && recommendations.length === 0 && (
-              <EmptyState
-                title="No Media Selected"
-                description={mediaMessage || 'No approved media matched this post. You can still preview the post without media.'}
-              />
-            )}
-
-            {!mediaLoading && recommendations.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recommendations.map((recommendation) => {
-                  const isSelected = selectedMedia?.file.id === recommendation.file.id;
-                  return (
-                    <button
-                      key={recommendation.file.id}
-                      type="button"
-                      onClick={() => setSelectedMediaId(recommendation.file.id)}
-                      className={[
-                        'text-left rounded-2xl transition-all hover:scale-[1.02]',
-                        isSelected ? 'ring-2 ring-neon-cyan' : '',
-                      ].join(' ')}
-                    >
-                      <MediaCard recommendation={recommendation} />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {error && <ErrorAlert message={error} onRetry={() => setError(null)} />}
-
-            <div className="flex justify-between pt-2">
-              <Button variant="secondary" onClick={() => setStep('content')}>Previous</Button>
-              <Button onClick={() => setStep('preview')} disabled={mediaLoading}>
-                Next: Preview
-              </Button>
-            </div>
-          </Card>
-        </>
-      )}
-
-      {step === 'preview' && result && (
-        <Card className="space-y-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-sora text-headline-lg text-on-surface">Post Preview</h2>
-              <p className="text-sm text-text-muted mt-1">Final content layout with selected media and hashtags.</p>
-            </div>
-            <Button variant="secondary" onClick={() => setStep('media')}>Back</Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-            <PreviewMedia recommendation={selectedMedia} />
-            <div className="space-y-4">
-              <PostResultCard content={result.primary} />
-              <HashtagList hashtags={hashtags} />
-            </div>
-          </div>
-
-          <div className="flex justify-between pt-2">
-            <Button variant="secondary" onClick={() => setStep('media')}>Previous</Button>
-            <Button onClick={resetFlow}>Create Another Post</Button>
-          </div>
+      {/* Loading state */}
+      {generating && (
+        <Card>
+          <Spinner />
         </Card>
       )}
+
+      {/* Error state */}
+      {error && !generating && !regenerating && (
+        <ErrorAlert
+          message={error}
+          onRetry={error === 'Please enter a topic' ? undefined : handleGenerate}
+        />
+      )}
+
+      {/* Result area */}
+      {result && !generating && (
+        <>
+          {/* Current draft accepted indicator */}
+          {useComposerStore.getState().currentDraft && (
+            <Card className="border-neon-cyan/30">
+              <p className="text-sm text-neon-cyan">
+                &#10003; Post accepted and saved as draft.
+              </p>
+            </Card>
+          )}
+
+          <GeneratedContent />
+          <VariationsPanel />
+          <ImprovementsPanel />
+          <RelatedIdeasPanel />
+          <ActionBar onRegenerate={handleRegenerate} onAccept={handleAccept} />
+        </>
+      )}
+
+      {/* Asset picker modal */}
+      <AssetPicker />
     </div>
   );
 }

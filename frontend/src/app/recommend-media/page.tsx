@@ -9,15 +9,14 @@ import EmptyState from '@/components/ui/EmptyState';
 import MediaRecommenderForm from '@/components/media/MediaRecommenderForm';
 import MediaRecommendationGrid from '@/components/media/MediaRecommendationGrid';
 import { recommendMedia } from '@/services/ai.service';
-import type { MediaRecommendation } from '@/types';
+import type { ScoredRecommendation } from '@/types';
 
 function RecommendMediaContent() {
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || undefined;
 
-  const [recommendations, setRecommendations] = useState<MediaRecommendation[]>([]);
-  const [message, setMessage] = useState<string | undefined>();
-  const [totalMatched, setTotalMatched] = useState(0);
+  const [recommendations, setRecommendations] = useState<ScoredRecommendation[]>([]);
+  const [noResultReason, setNoResultReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +24,12 @@ function RecommendMediaContent() {
     setLoading(true);
     setError(null);
     setRecommendations([]);
-    setMessage(undefined);
+    setNoResultReason(null);
     try {
       const res = await recommendMedia(content);
       if (res.success && res.data) {
         setRecommendations(res.data.recommendations);
-        setMessage(res.data.message);
-        setTotalMatched(res.data.totalMatched);
+        setNoResultReason(res.data.noResultReason);
       } else {
         setError(res.error?.message || 'Failed to find media');
       }
@@ -56,13 +54,13 @@ function RecommendMediaContent() {
 
       {loading && <Card><Spinner /></Card>}
 
-      {!loading && recommendations.length === 0 && message && (
+      {!loading && recommendations.length === 0 && noResultReason && (
         <Card>
           <EmptyState
-            title={message === 'No approved media files are available in the library.'
+            title={noResultReason === 'No approved media files are available in the library.'
               ? 'No Media Available'
               : 'No Matches Found'}
-            description={message}
+            description={noResultReason}
           />
         </Card>
       )}
@@ -71,7 +69,7 @@ function RecommendMediaContent() {
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-on-surface">Recommended Media</h3>
-            <span className="text-sm text-text-muted">{totalMatched} files matched</span>
+            <span className="text-sm text-text-muted">{recommendations.length} files matched</span>
           </div>
           <MediaRecommendationGrid recommendations={recommendations} />
         </Card>

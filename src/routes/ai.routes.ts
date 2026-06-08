@@ -9,14 +9,27 @@ const router = Router();
 const recommendMediaSchema = z
   .object({
     postContent: z.string().trim().min(10),
+    type: z.enum(['image', 'video', 'audio', 'document']).optional(),
+    limit: z.coerce.number().int().min(1).max(20).optional().default(5),
   })
   .strip();
 
 const generatePostSchema = z
   .object({
-    prompt: z.string().trim().min(10, 'Prompt is too short to generate meaningful content. Please provide more detail.'),
+    topic: z.string().trim().min(5, 'Topic is too short. Please provide more detail.'),
     tone: z.enum(['professional', 'casual', 'excited']).optional().default('professional'),
-    variations: z.coerce.number().int().min(1).optional().default(3),
+    format: z.enum(['short', 'long', 'bullet']).optional().default('short'),
+    userId: z.string().trim().optional(),
+  })
+  .strip();
+
+const regeneratePostSchema = z
+  .object({
+    previousContent: z.string().trim().min(1, 'Previous content is required for regeneration.'),
+    topic: z.string().trim().min(5, 'Topic is too short.'),
+    tone: z.enum(['professional', 'casual', 'excited']).optional().default('professional'),
+    format: z.enum(['short', 'long', 'bullet']).optional().default('short'),
+    additionalInstructions: z.string().trim().optional(),
   })
   .strip();
 
@@ -26,8 +39,23 @@ const suggestHashtagsSchema = z
   })
   .strip();
 
+const suggestImprovementsSchema = z
+  .object({
+    postContent: z.string().trim().min(10, 'Post content is too short for improvement suggestions.'),
+  })
+  .strip();
+
+const relatedPostIdeasSchema = z
+  .object({
+    postContent: z.string().trim().min(10, 'Post content is too short for related ideas.'),
+  })
+  .strip();
+
 router.post('/recommend-media', validate({ body: recommendMediaSchema }), aiController.recommendMedia);
 router.post('/generate-post', validate({ body: generatePostSchema }), aiController.generatePost);
+router.post('/regenerate-post', validate({ body: regeneratePostSchema }), aiController.regeneratePost);
 router.post('/suggest-hashtags', validate({ body: suggestHashtagsSchema }), aiController.suggestHashtags);
+router.post('/suggest-improvements', validate({ body: suggestImprovementsSchema }), aiController.suggestImprovements);
+router.post('/related-post-ideas', validate({ body: relatedPostIdeasSchema }), aiController.relatedPostIdeas);
 
 export default router;

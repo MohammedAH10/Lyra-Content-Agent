@@ -1,45 +1,118 @@
-import { getAiClient, getModelId } from '../utils/aiClient';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
+import { callWithFallback, parseAiJson } from './modelRouter.service';
+import { fallbackGeneratePost, fallbackSuggestHashtags } from './deterministicTemplates';
+import { logAiRequest } from './auditLog.service';
 
-type Tone = 'professional' | 'casual' | 'excited';
+export type Tone = 'professional' | 'casual' | 'excited';
+export type PostFormat = 'short' | 'long' | 'bullet';
+
+export type Variation = { label: string; content: string };
 
 export type GeneratePostResult = {
-  primary: string;
-  variations: string[];
-  hashtags: string[];
+  content: string;
+  variations: Variation[];
+  improvements: string[];
+  relatedIdeas: string[];
+  fallbackUsed: boolean;
 };
 
 export type SuggestHashtagsResult = {
   hashtags: string[];
 };
 
+export type SuggestImprovementsResult = {
+  improvements: string[];
+};
+
+export type RelatedIdeasResult = {
+  relatedIdeas: string[];
+};
+
 // ── Prompt Builders ──────────────────────────────────────────
 
+const FORMAT_INSTRUCTIONS: Record<PostFormat, string> = {
+  short: 'Keep the post concise — 2-3 short paragraphs max. Punchy, scannable.',
+  long: 'Write a detailed, in-depth post. 4-6 paragraphs with rich context and nuance.',
+  bullet: 'Use bullet points or numbered lists. Clear, skimmable formatting.',
+};
+
 export const buildGeneratePostPrompt = (
-  prompt: string,
+  topic: string,
   tone: Tone,
-  variations: number,
+  format: PostFormat,
 ): string => {
   return [
-    `You are a social media content specialist. Generate a social media post based on the user's prompt.`,
+    `You are a social media content specialist. Generate a post about the given topic.`,
     ``,
+    `Topic: "${topic}"`,
     `Tone: ${tone}`,
-    `Number of variations: ${variations}`,
-    ``,
-    `User prompt: "${prompt}"`,
+    `Format: ${format}`,
+    `Format instruction: ${FORMAT_INSTRUCTIONS[format]}`,
     ``,
     `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
     `{`,
-    `  "primary": "The main post text",`,
-    `  "variations": ["variation 1", "variation 2"],`,
-    `  "hashtags": ["#Hashtag1", "#Hashtag2"]`,
+    `  "content": "The main post content",`,
+    `  "variations": [`,
+    `    { "label": "Short", "content": "..." },`,
+    `    { "label": "Professional", "content": "..." },`,
+    `    { "label": "Engaging", "content": "..." }`,
+    `  ],`,
+    `  "improvements": ["Suggestion to make the post stronger"],`,
+    `  "relatedIdeas": ["Another angle or topic to explore"]`,
     `}`,
     ``,
     `Rules:`,
-    `- "primary" must be a compelling post matching the requested tone.`,
-    `- "variations" must contain exactly ${variations} alternative versions.`,
-    `- "hashtags" must contain 3-5 relevant hashtags, each starting with #.`,
+    `- "content" must be a compelling post matching the requested tone and format.`,
+    `- "variations" must contain exactly 3 alternatives with different approaches (labels: "Short", "Professional", "Engaging").`,
+    `- "improvements" must contain 2-3 actionable suggestions to strengthen the post.`,
+    `- "relatedIdeas" must contain 2-3 related angles or follow-up topics.`,
+    `- Every field must be present. Do not include any text outside the JSON object.`,
+  ].join('\n');
+};
+
+export const buildRegeneratePrompt = (
+  previousContent: string,
+  topic: string,
+  tone: Tone,
+  format: PostFormat,
+  additionalInstructions?: string,
+): string => {
+  const instructions = additionalInstructions
+    ? `\n\nAdditional user instructions: "${additionalInstructions}"`
+    : '';
+
+  return [
+    `You are a social media content specialist. Regenerate the following post with improvements based on the instructions.`,
+    ``,
+    `Topic: "${topic}"`,
+    `Tone: ${tone}`,
+    `Format: ${format}`,
+    `Format instruction: ${FORMAT_INSTRUCTIONS[format]}`,
+    ``,
+    `Previous version:`,
+    `"""`,
+    previousContent,
+    `"""`,
+    instructions,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "content": "The improved main post content",`,
+    `  "variations": [`,
+    `    { "label": "Short", "content": "..." },`,
+    `    { "label": "Professional", "content": "..." },`,
+    `    { "label": "Engaging", "content": "..." }`,
+    `  ],`,
+    `  "improvements": ["Suggestion to make the post stronger"],`,
+    `  "relatedIdeas": ["Another angle or topic to explore"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- "content" must retain the core message but incorporate the requested improvements.`,
+    `- "variations" must contain exactly 3 alternatives with different approaches (labels: "Short", "Professional", "Engaging").`,
+    `- "improvements" must contain 2-3 actionable suggestions to strengthen the post.`,
+    `- "relatedIdeas" must contain 2-3 related angles or follow-up topics.`,
     `- Every field must be present. Do not include any text outside the JSON object.`,
   ].join('\n');
 };
@@ -92,120 +165,375 @@ export const buildMediaRecommendationPrompt = (
   ].join('\n');
 };
 
-// ── AI Call Wrapper ──────────────────────────────────────────
-
-const callAi = async (systemPrompt: string): Promise<string> => {
-  const timeoutMs = Number(process.env.AI_TIMEOUT_MS || 15000);
-  const client = getAiClient();
-  const model = getModelId();
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  const startTime = Date.now();
-
-  try {
-    logger.info('AI call initiated', {
-      model,
-      promptLength: systemPrompt.length,
-    });
-
-    const response = await client.chat.completions.create(
-      {
-        model,
-        messages: [{ role: 'user', content: systemPrompt }],
-        temperature: 0.7,
-      },
-      { signal: controller.signal },
-    );
-
-    const elapsed = Date.now() - startTime;
-    logger.info('AI call completed', { model, responseTimeMs: elapsed });
-
-    const content = response.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new AppError(503, 'AI_UNAVAILABLE', 'AI returned an empty response.');
-    }
-
-    return content;
-  } catch (error: unknown) {
-    const elapsed = Date.now() - startTime;
-
-    if (error instanceof AppError) {
-      throw error;
-    }
-
-    if (
-      error instanceof Error &&
-      (error.name === 'AbortError' || error.message?.includes('aborted'))
-    ) {
-      logger.warn('AI call timed out', { model, timeoutMs, elapsedMs: elapsed });
-      throw new AppError(504, 'AI_TIMEOUT', 'The request took too long. Please try again.');
-    }
-
-    logger.error('AI call failed', { model, error, elapsedMs: elapsed });
-    throw new AppError(
-      503,
-      'AI_UNAVAILABLE',
-      'Content generation is temporarily unavailable. Please try again shortly.',
-    );
-  } finally {
-    clearTimeout(timeoutId);
-  }
+export const buildImprovementsPrompt = (postContent: string): string => {
+  return [
+    `You are a social media content editor. Suggest actionable improvements for the following post content.`,
+    ``,
+    `Post content: "${postContent}"`,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "improvements": ["Improvement suggestion 1", "Improvement suggestion 2", "Improvement suggestion 3"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- Provide 3-5 specific, actionable improvement suggestions.`,
+    `- Focus on engagement, clarity, tone, and structure.`,
+    `- Keep each suggestion concise (1-2 sentences).`,
+    `- Do not include any text outside the JSON object.`,
+  ].join('\n');
 };
 
-// ── JSON Parser Helper ───────────────────────────────────────
+export const buildRelatedIdeasPrompt = (postContent: string): string => {
+  return [
+    `You are a social media content strategist. Suggest related post ideas based on the following content.`,
+    ``,
+    `Post content: "${postContent}"`,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "relatedIdeas": ["Related idea 1", "Related idea 2", "Related idea 3"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- Provide 3-5 related post ideas that naturally extend from the given content.`,
+    `- Each idea should be a complete mini-brief (1-2 sentences).`,
+    `- Cover different angles: educational, inspirational, practical.`,
+    `- Do not include any text outside the JSON object.`,
+  ].join('\n');
+};
 
-const parseAiJson = <T>(raw: string): T => {
-  // Strip markdown code fences if the model wraps them
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
+// ── Validation ───────────────────────────────────────────────
 
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    logger.error('Failed to parse AI JSON response', { raw });
-    throw new AppError(503, 'AI_UNAVAILABLE', 'AI returned an invalid response format.');
-  }
+const VALID_VARIATION_LABELS = ['Short', 'Professional', 'Engaging'];
+
+const isValidVariations = (variations: unknown): variations is Variation[] => {
+  if (!Array.isArray(variations) || variations.length === 0) return false;
+  return variations.every(
+    (v) =>
+      v &&
+      typeof v === 'object' &&
+      typeof (v as Variation).label === 'string' &&
+      typeof (v as Variation).content === 'string' &&
+      VALID_VARIATION_LABELS.includes((v as Variation).label),
+  );
+};
+
+const isValidGeneratePostResult = (data: unknown): data is GeneratePostResult => {
+  if (!data || typeof data !== 'object') return false;
+
+  const d = data as Record<string, unknown>;
+
+  if (typeof d.content !== 'string' || !d.content.trim()) return false;
+  if (!isValidVariations(d.variations)) return false;
+
+  if (!Array.isArray(d.improvements)) return false;
+  if (!Array.isArray(d.relatedIdeas)) return false;
+
+  return true;
 };
 
 // ── Public Service Methods ───────────────────────────────────
 
 export const generatePost = async (
-  prompt: string,
+  topic: string,
   tone: Tone = 'professional',
-  variations: number = 3,
+  format: PostFormat = 'short',
+  userId?: string,
 ): Promise<GeneratePostResult> => {
-  const cappedVariations = Math.min(Math.max(variations, 1), 5);
-  const systemPrompt = buildGeneratePostPrompt(prompt, tone, cappedVariations);
-  const raw = await callAi(systemPrompt);
-  const parsed = parseAiJson<GeneratePostResult>(raw);
+  const startTime = Date.now();
+  const systemPrompt = buildGeneratePostPrompt(topic, tone, format);
+  const inputSummary = `Generate post: topic="${topic}", tone=${tone}, format=${format}`;
 
-  // Validate shape
-  if (!parsed.primary || !Array.isArray(parsed.variations) || !Array.isArray(parsed.hashtags)) {
-    logger.error('AI response missing expected fields', { parsed });
-    throw new AppError(503, 'AI_UNAVAILABLE', 'AI returned an incomplete response.');
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<GeneratePostResult>(modelResult.content);
+
+      if (!isValidGeneratePostResult(parsed)) {
+        logger.error('AI response missing expected fields, falling back to template', { parsed });
+        const fallback = fallbackGeneratePost(topic, tone, format);
+        await logAiRequest({
+          userId, requestType: 'generate', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing expected fields',
+        });
+        return fallback;
+      }
+
+      await logAiRequest({
+        userId, requestType: 'generate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
+
+      return {
+        content: parsed.content,
+        variations: parsed.variations,
+        improvements: parsed.improvements,
+        relatedIdeas: parsed.relatedIdeas,
+        fallbackUsed: modelResult.fallbackUsed,
+      };
+    } catch {
+      logger.warn('Failed to parse AI response, using deterministic template');
+      const fallback = fallbackGeneratePost(topic, tone, format);
+      await logAiRequest({
+        userId, requestType: 'generate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
+    }
   }
 
-  return {
-    primary: parsed.primary,
-    variations: parsed.variations.slice(0, cappedVariations),
-    hashtags: parsed.hashtags,
-  };
+  logger.warn('AI providers unavailable, returning deterministic fallback template');
+  const fallback = fallbackGeneratePost(topic, tone, format);
+  await logAiRequest({
+    userId, requestType: 'generate', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
 };
 
-export const suggestHashtags = async (postContent: string): Promise<SuggestHashtagsResult> => {
-  const systemPrompt = buildHashtagPrompt(postContent);
-  const raw = await callAi(systemPrompt);
-  const parsed = parseAiJson<SuggestHashtagsResult>(raw);
+export const regeneratePost = async (
+  previousContent: string,
+  topic: string,
+  tone: Tone = 'professional',
+  format: PostFormat = 'short',
+  additionalInstructions?: string,
+  userId?: string,
+): Promise<GeneratePostResult> => {
+  const startTime = Date.now();
+  const systemPrompt = buildRegeneratePrompt(
+    previousContent,
+    topic,
+    tone,
+    format,
+    additionalInstructions,
+  );
+  const inputSummary = `Regenerate: topic="${topic}", tone=${tone}, format=${format}`;
 
-  if (!Array.isArray(parsed.hashtags)) {
-    logger.error('AI response missing hashtags array', { parsed });
-    throw new AppError(503, 'AI_UNAVAILABLE', 'AI returned an incomplete response.');
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<GeneratePostResult>(modelResult.content);
+
+      if (!isValidGeneratePostResult(parsed)) {
+        logger.error('AI response missing expected fields, falling back to template', { parsed });
+        const fallback = fallbackGeneratePost(topic, tone, format);
+        await logAiRequest({
+          userId, requestType: 'regenerate', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing expected fields',
+        });
+        return fallback;
+      }
+
+      await logAiRequest({
+        userId, requestType: 'regenerate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
+
+      return {
+        content: parsed.content,
+        variations: parsed.variations,
+        improvements: parsed.improvements,
+        relatedIdeas: parsed.relatedIdeas,
+        fallbackUsed: modelResult.fallbackUsed,
+      };
+    } catch {
+      logger.warn('Failed to parse AI response, using deterministic template');
+      const fallback = fallbackGeneratePost(topic, tone, format);
+      await logAiRequest({
+        userId, requestType: 'regenerate', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
+    }
   }
 
-  return { hashtags: parsed.hashtags };
+  logger.warn('AI providers unavailable, returning deterministic fallback template');
+  const fallback = fallbackGeneratePost(topic, tone, format);
+  await logAiRequest({
+    userId, requestType: 'regenerate', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
+};
+
+export const suggestHashtags = async (
+  postContent: string,
+  userId?: string,
+): Promise<SuggestHashtagsResult> => {
+  const startTime = Date.now();
+  const systemPrompt = buildHashtagPrompt(postContent);
+  const inputSummary = `Hashtags: "${postContent.slice(0, 80)}..."`;
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<SuggestHashtagsResult>(modelResult.content);
+
+      if (!Array.isArray(parsed.hashtags)) {
+        logger.error('AI response missing hashtags array, falling back to keyword extraction', { parsed });
+        const fallback = fallbackSuggestHashtags(postContent);
+        await logAiRequest({
+          userId, requestType: 'hashtags', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing hashtags array',
+        });
+        return fallback;
+      }
+
+      await logAiRequest({
+        userId, requestType: 'hashtags', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
+
+      return { hashtags: parsed.hashtags };
+    } catch {
+      logger.warn('Failed to parse AI response, using keyword-based hashtags');
+      const fallback = fallbackSuggestHashtags(postContent);
+      await logAiRequest({
+        userId, requestType: 'hashtags', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return fallback;
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning keyword-based hashtags');
+  const fallback = fallbackSuggestHashtags(postContent);
+  await logAiRequest({
+    userId, requestType: 'hashtags', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return fallback;
+};
+
+export const suggestImprovements = async (
+  postContent: string,
+  userId?: string,
+): Promise<SuggestImprovementsResult> => {
+  const startTime = Date.now();
+  const systemPrompt = buildImprovementsPrompt(postContent);
+  const inputSummary = `Improvements: "${postContent.slice(0, 80)}..."`;
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<SuggestImprovementsResult>(modelResult.content);
+
+      if (!Array.isArray(parsed.improvements) || parsed.improvements.length === 0) {
+        logger.error('AI response missing improvements array, falling back', { parsed });
+        await logAiRequest({
+          userId, requestType: 'improve', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing improvements array',
+        });
+        return { improvements: ['AI generation unavailable — no suggestions available.'] };
+      }
+
+      await logAiRequest({
+        userId, requestType: 'improve', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
+
+      return { improvements: parsed.improvements };
+    } catch {
+      logger.warn('Failed to parse AI response, returning fallback');
+      await logAiRequest({
+        userId, requestType: 'improve', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return { improvements: ['AI generation unavailable — no suggestions available.'] };
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning fallback');
+  await logAiRequest({
+    userId, requestType: 'improve', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return { improvements: ['AI generation unavailable — no suggestions available.'] };
+};
+
+export const relatedPostIdeas = async (
+  postContent: string,
+  userId?: string,
+): Promise<RelatedIdeasResult> => {
+  const startTime = Date.now();
+  const systemPrompt = buildRelatedIdeasPrompt(postContent);
+  const inputSummary = `Related ideas: "${postContent.slice(0, 80)}..."`;
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<RelatedIdeasResult>(modelResult.content);
+
+      if (!Array.isArray(parsed.relatedIdeas) || parsed.relatedIdeas.length === 0) {
+        logger.error('AI response missing relatedIdeas array, falling back', { parsed });
+        await logAiRequest({
+          userId, requestType: 'related', inputSummary,
+          modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+          success: false, fallbackUsed: true,
+          errorMessage: 'AI response missing relatedIdeas array',
+        });
+        return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
+      }
+
+      await logAiRequest({
+        userId, requestType: 'related', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: modelResult.latencyMs,
+        success: true, fallbackUsed: modelResult.fallbackUsed,
+      });
+
+      return { relatedIdeas: parsed.relatedIdeas };
+    } catch {
+      logger.warn('Failed to parse AI response, returning fallback');
+      await logAiRequest({
+        userId, requestType: 'related', inputSummary,
+        modelUsed: modelResult.modelUsed, latencyMs: Date.now() - startTime,
+        success: false, fallbackUsed: true,
+        errorMessage: 'Failed to parse AI JSON response',
+      });
+      return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning fallback');
+  await logAiRequest({
+    userId, requestType: 'related', inputSummary,
+    modelUsed: 'none', latencyMs: Date.now() - startTime,
+    success: false, fallbackUsed: true,
+    errorMessage: 'All AI providers unavailable',
+  });
+  return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
 };

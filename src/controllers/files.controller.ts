@@ -7,12 +7,19 @@ const serializeFile = (file: FileDocument) => ({
   id: file._id.toString(),
   name: file.name,
   type: file.type,
+  mimeType: file.mimeType,
+  description: file.description,
   size: file.size,
   url: file.url,
   tags: file.tags,
+  s3Key: file.s3Key || null,
+  s3Bucket: file.s3Bucket || null,
+  s3Url: file.s3Url || null,
+  ownerId: file.ownerId || null,
+  visibility: file.visibility,
   uploadDate: file.uploadDate,
   status: file.status,
-  moderationReason: file.moderationReason,
+  moderationReason: file.moderationReason || null,
   createdAt: file.createdAt,
   updatedAt: file.updatedAt,
 });
@@ -25,21 +32,6 @@ function getFileTypeFromName(name: string): string {
   if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(ext)) return 'document';
   return 'document';
 }
-
-const ACCEPTED_MIME_TYPES = [
-  'image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp', 'image/bmp',
-  'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
-  'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/flac',
-  'application/pdf', 'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-];
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 export const createFile: RequestHandler = async (req, res, next) => {
   try {
@@ -74,18 +66,22 @@ export const createFileFromUpload: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const type = getFileTypeFromName(storedName) as any;
+    const mimeType = uploadedFile.mimetype || '';
+    const type = (req.body.type || getFileTypeFromName(storedName)) as any;
 
     const tags = req.body.tags
       ? String(req.body.tags).split(',').map((t: string) => t.trim()).filter(Boolean)
       : [];
 
-    const file = await filesService.createFileFromUpload({
+    const description = req.body.description?.trim() || '';
+
+    const file = await filesService.createFileFromUploadWithModeration({
       name: storedName,
       type,
       size: uploadedFile.size,
       tags,
       data: uploadedFile.buffer,
+      description,
     });
 
     res.status(201).json({
