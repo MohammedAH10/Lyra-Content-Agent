@@ -20,6 +20,14 @@ export type SuggestHashtagsResult = {
   hashtags: string[];
 };
 
+export type SuggestImprovementsResult = {
+  improvements: string[];
+};
+
+export type RelatedIdeasResult = {
+  relatedIdeas: string[];
+};
+
 // ── Prompt Builders ──────────────────────────────────────────
 
 const FORMAT_INSTRUCTIONS: Record<PostFormat, string> = {
@@ -156,6 +164,44 @@ export const buildMediaRecommendationPrompt = (
   ].join('\n');
 };
 
+export const buildImprovementsPrompt = (postContent: string): string => {
+  return [
+    `You are a social media content editor. Suggest actionable improvements for the following post content.`,
+    ``,
+    `Post content: "${postContent}"`,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "improvements": ["Improvement suggestion 1", "Improvement suggestion 2", "Improvement suggestion 3"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- Provide 3-5 specific, actionable improvement suggestions.`,
+    `- Focus on engagement, clarity, tone, and structure.`,
+    `- Keep each suggestion concise (1-2 sentences).`,
+    `- Do not include any text outside the JSON object.`,
+  ].join('\n');
+};
+
+export const buildRelatedIdeasPrompt = (postContent: string): string => {
+  return [
+    `You are a social media content strategist. Suggest related post ideas based on the following content.`,
+    ``,
+    `Post content: "${postContent}"`,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "relatedIdeas": ["Related idea 1", "Related idea 2", "Related idea 3"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- Provide 3-5 related post ideas that naturally extend from the given content.`,
+    `- Each idea should be a complete mini-brief (1-2 sentences).`,
+    `- Cover different angles: educational, inspirational, practical.`,
+    `- Do not include any text outside the JSON object.`,
+  ].join('\n');
+};
+
 // ── Validation ───────────────────────────────────────────────
 
 const VALID_VARIATION_LABELS = ['Short', 'Professional', 'Engaging'];
@@ -289,4 +335,54 @@ export const suggestHashtags = async (postContent: string): Promise<SuggestHasht
 
   logger.warn('AI providers unavailable, returning keyword-based hashtags');
   return fallbackSuggestHashtags(postContent);
+};
+
+export const suggestImprovements = async (postContent: string): Promise<SuggestImprovementsResult> => {
+  const systemPrompt = buildImprovementsPrompt(postContent);
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<SuggestImprovementsResult>(modelResult.content);
+
+      if (!Array.isArray(parsed.improvements) || parsed.improvements.length === 0) {
+        logger.error('AI response missing improvements array, falling back', { parsed });
+        return { improvements: ['AI generation unavailable — no suggestions available.'] };
+      }
+
+      return { improvements: parsed.improvements };
+    } catch {
+      logger.warn('Failed to parse AI response, returning fallback');
+      return { improvements: ['AI generation unavailable — no suggestions available.'] };
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning fallback');
+  return { improvements: ['AI generation unavailable — no suggestions available.'] };
+};
+
+export const relatedPostIdeas = async (postContent: string): Promise<RelatedIdeasResult> => {
+  const systemPrompt = buildRelatedIdeasPrompt(postContent);
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<RelatedIdeasResult>(modelResult.content);
+
+      if (!Array.isArray(parsed.relatedIdeas) || parsed.relatedIdeas.length === 0) {
+        logger.error('AI response missing relatedIdeas array, falling back', { parsed });
+        return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
+      }
+
+      return { relatedIdeas: parsed.relatedIdeas };
+    } catch {
+      logger.warn('Failed to parse AI response, returning fallback');
+      return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning fallback');
+  return { relatedIdeas: ['AI generation unavailable — no ideas available.'] };
 };

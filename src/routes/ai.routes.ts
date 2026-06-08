@@ -9,6 +9,8 @@ const router = Router();
 const recommendMediaSchema = z
   .object({
     postContent: z.string().trim().min(10),
+    type: z.enum(['image', 'video', 'audio', 'document']).optional(),
+    limit: z.coerce.number().int().min(1).max(20).optional().default(5),
   })
   .strip();
 
@@ -37,9 +39,23 @@ const suggestHashtagsSchema = z
   })
   .strip();
 
+const suggestImprovementsSchema = z
+  .object({
+    postContent: z.string().trim().min(10, 'Post content is too short for improvement suggestions.'),
+  })
+  .strip();
+
+const relatedPostIdeasSchema = z
+  .object({
+    postContent: z.string().trim().min(10, 'Post content is too short for related ideas.'),
+  })
+  .strip();
+
 router.post('/recommend-media', validate({ body: recommendMediaSchema }), aiController.recommendMedia);
 router.post('/generate-post', validate({ body: generatePostSchema }), aiController.generatePost);
 router.post('/regenerate-post', validate({ body: regeneratePostSchema }), aiController.regeneratePost);
 router.post('/suggest-hashtags', validate({ body: suggestHashtagsSchema }), aiController.suggestHashtags);
+router.post('/suggest-improvements', validate({ body: suggestImprovementsSchema }), aiController.suggestImprovements);
+router.post('/related-post-ideas', validate({ body: relatedPostIdeasSchema }), aiController.relatedPostIdeas);
 
 export default router;

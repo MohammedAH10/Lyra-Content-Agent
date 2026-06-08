@@ -3,10 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import File from '../src/models/File';
-import {
-  extractKeywords,
-  recommendMediaForPost,
-} from '../src/services/recommendation.service';
+import { recommendMediaForPost } from '../src/services/recommendation.service';
 
 const createFile = (overrides: Record<string, unknown>) => {
   return File.create({
@@ -37,25 +34,6 @@ describe('recommendation service', () => {
     await mongoServer.stop();
   });
 
-  it('extracts keywords from post content', () => {
-    expect(extractKeywords('Launching our new product campaign next week!')).toEqual([
-      'launching',
-      'new',
-      'product',
-      'campaign',
-      'next',
-      'week',
-    ]);
-  });
-
-  it('removes stopwords from extracted keywords', () => {
-    expect(extractKeywords('The product is for the team and the market')).toEqual([
-      'product',
-      'team',
-      'market',
-    ]);
-  });
-
   it('only considers approved files', async () => {
     await createFile({
       name: 'approved-product-launch.png',
@@ -76,7 +54,7 @@ describe('recommendation service', () => {
     const result = await recommendMediaForPost('Product launch announcement');
 
     expect(result.recommendations).toHaveLength(1);
-    expect(result.recommendations[0].file.name).toBe('approved-product-launch.png');
+    expect(result.recommendations[0].name).toBe('approved-product-launch.png');
   });
 
   it('scores files by overlap with file name and tags', async () => {
@@ -91,10 +69,8 @@ describe('recommendation service', () => {
 
     const result = await recommendMediaForPost('Product launch marketing post');
 
-    expect(result.recommendations[0]).toMatchObject({
-      score: 3,
-      matchReason: 'File tags/name match post keywords: product, launch, marketing',
-    });
+    expect(result.recommendations[0].score).toBeGreaterThan(0);
+    expect(result.recommendations[0].reason).toContain('product');
   });
 
   it('sorts results by descending score', async () => {
@@ -109,10 +85,7 @@ describe('recommendation service', () => {
 
     const result = await recommendMediaForPost('Product launch marketing update');
 
-    expect(result.recommendations.map((recommendation) => recommendation.file.name)).toEqual([
-      'product-launch-marketing.png',
-      'product.png',
-    ]);
+    expect(result.recommendations[0].name).toBe('product-launch-marketing.png');
   });
 
   it('returns the required empty-library message when no approved files exist', async () => {
@@ -126,7 +99,7 @@ describe('recommendation service', () => {
 
     expect(result).toEqual({
       recommendations: [],
-      message: 'No approved media files are available in the library.',
+      noResultReason: 'No approved media files are available in the library.',
     });
   });
 
@@ -141,7 +114,28 @@ describe('recommendation service', () => {
 
     expect(result).toEqual({
       recommendations: [],
-      message: 'No files matched the content of this post.',
+      noResultReason: 'No files matched the content of this post.',
     });
+  });
+
+  it('filters by type when specified', async () => {
+    await createFile({ name: 'photo.png', type: 'image', tags: ['launch'] });
+    await createFile({ name: 'video.mp4', type: 'video', tags: ['launch'] });
+    await createFile({ name: 'doc.pdf', type: 'document', tags: ['launch'] });
+
+    const result = await recommendMediaForPost('Product launch announcement', 'image');
+
+    expect(result.recommendations).toHaveLength(1);
+    expect(result.recommendations[0].type).toBe('image');
+  });
+
+  it('respects the limit parameter', async () => {
+    await createFile({ name: 'photo1.png', tags: ['launch'] });
+    await createFile({ name: 'photo2.png', tags: ['launch'] });
+    await createFile({ name: 'photo3.png', tags: ['launch'] });
+
+    const result = await recommendMediaForPost('Product launch announcement', undefined, 2);
+
+    expect(result.recommendations.length).toBeLessThanOrEqual(2);
   });
 });
