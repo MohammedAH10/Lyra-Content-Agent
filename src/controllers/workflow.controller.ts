@@ -1,7 +1,9 @@
 import { RequestHandler } from 'express';
 
 import * as filesService from '../services/files.service';
+import { generateS3Reference } from '../services/s3Reference.service';
 import { FileDocument } from '../types';
+import logger from '../utils/logger';
 
 const serializeFile = (file: FileDocument) => ({
   id: file._id.toString(),
@@ -33,20 +35,7 @@ function getFileTypeFromName(name: string): string {
   return 'document';
 }
 
-export const createFile: RequestHandler = async (req, res, next) => {
-  try {
-    const file = await filesService.createFile(req.body);
-
-    res.status(201).json({
-      success: true,
-      data: serializeFile(file),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const createFileFromUpload: RequestHandler = async (req, res, next) => {
+export const initiateS3Upload: RequestHandler = async (req, res, next) => {
   try {
     const uploadedFile = (req as any).file;
     if (!uploadedFile) {
@@ -68,20 +57,32 @@ export const createFileFromUpload: RequestHandler = async (req, res, next) => {
 
     const mimeType = uploadedFile.mimetype || '';
     const type = (req.body.type || getFileTypeFromName(storedName)) as any;
-
     const tags = req.body.tags
       ? String(req.body.tags).split(',').map((t: string) => t.trim()).filter(Boolean)
       : [];
-
     const description = req.body.description?.trim() || '';
+    const ownerId = req.body.ownerId?.trim() || null;
 
-    const file = await filesService.createFileFromUploadWithModeration({
+    const s3Ref = generateS3Reference(storedName);
+
+    const file = await filesService.initiateS3Upload({
       name: storedName,
       type,
+      mimeType,
       size: uploadedFile.size,
       tags,
-      data: uploadedFile.buffer,
       description,
+      data: uploadedFile.buffer,
+      s3Bucket: s3Ref.s3Bucket,
+      s3Key: s3Ref.s3Key,
+      s3Url: s3Ref.s3Url,
+      ownerId,
+    });
+
+    logger.info('S3 upload initiated', {
+      fileId: file._id.toString(),
+      s3Key: file.s3Key,
+      s3Bucket: file.s3Bucket,
     });
 
     res.status(201).json({
@@ -93,24 +94,37 @@ export const createFileFromUpload: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const listFiles: RequestHandler = async (req, res, next) => {
+export const processModerationResult: RequestHandler = async (req, res, next) => {
   try {
-    const files = await filesService.listFiles(req.query);
-    const data = files.map(serializeFile);
+    const fileId = String(req.params.id);
+    const { moderationScore, moderationCategories } = req.body;
 
-    res.status(200).json({
-      success: true,
-      data,
-      count: data.length,
+    if (moderationScore === undefined || typeof moderationScore !== 'number') {
+      res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'moderationScore is required (number 0-100)' },
+      });
+      return;
+    }
+
+    if (moderationScore < 0 || moderationScore > 100) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'moderationScore must be between 0 and 100' },
+      });
+      return;
+    }
+
+    const file = await filesService.processModerationResult(fileId, {
+      score: moderationScore,
+      categories: moderationCategories || [],
     });
-  } catch (error) {
-    next(error);
-  }
-};
 
-export const getFileById: RequestHandler = async (req, res, next) => {
-  try {
-    const file = await filesService.getFileById(String(req.params.id));
+    logger.info('Moderation result processed', {
+      fileId: file._id.toString(),
+      status: file.status,
+      score: moderationScore,
+    });
 
     res.status(200).json({
       success: true,
@@ -121,18 +135,28 @@ export const getFileById: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const getFileData: RequestHandler = async (req, res, next) => {
+export const serveFileByS3Key: RequestHandler = async (req, res, next) => {
   try {
-    const file = await filesService.getFileById(String(req.params.id));
-
-    if (!file.data) {
-      res.status(404).json({
+    const s3Key = String(req.query.s3Key);
+    if (!s3Key) {
+      res.status(400).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'File data not found' },
+        error: { code: 'VALIDATION_ERROR', message: 's3Key query parameter is required' },
       });
       return;
     }
 
+    const file = await filesService.getFileByS3Key(s3Key);
+
+    if (!file.data) {
+      res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'File data not available' },
+      });
+      return;
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const mimeTypes: Record<string, string> = {
       png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
       gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp',
@@ -146,26 +170,14 @@ export const getFileData: RequestHandler = async (req, res, next) => {
       txt: 'text/plain',
     };
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const contentType = mimeTypes[ext] || 'application/octet-stream';
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', file.data.length);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('x-amz-request-id', `simulated-${Date.now()}`);
+    res.setHeader('x-amz-id-2', `simulated-host-id-${file._id.toString()}`);
     res.end(file.data);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateFileStatus: RequestHandler = async (req, res, next) => {
-  try {
-    const file = await filesService.updateFileStatus(String(req.params.id), req.body);
-
-    res.status(200).json({
-      success: true,
-      data: serializeFile(file),
-    });
   } catch (error) {
     next(error);
   }

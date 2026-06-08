@@ -1,7 +1,7 @@
 import { model, models, Schema } from 'mongoose';
 
 import { FileDocument } from '../types';
-import { FILE_STATUSES, FILE_TYPES } from '../utils/constants';
+import { FILE_STATUSES, FILE_TYPES, FILE_VISIBILITY } from '../utils/constants';
 
 const fileSchema = new Schema<FileDocument>(
   {
@@ -14,6 +14,16 @@ const fileSchema = new Schema<FileDocument>(
       type: String,
       enum: FILE_TYPES,
       required: true,
+    },
+    mimeType: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: '',
     },
     size: {
       type: Number,
@@ -32,6 +42,27 @@ const fileSchema = new Schema<FileDocument>(
     tags: {
       type: [String],
       default: [],
+    },
+    s3Key: {
+      type: String,
+      trim: true,
+    },
+    s3Bucket: {
+      type: String,
+      trim: true,
+    },
+    s3Url: {
+      type: String,
+      trim: true,
+    },
+    ownerId: {
+      type: String,
+      trim: true,
+    },
+    visibility: {
+      type: String,
+      enum: FILE_VISIBILITY,
+      default: 'private',
     },
     uploadDate: {
       type: Date,
