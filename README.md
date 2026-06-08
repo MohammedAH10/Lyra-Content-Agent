@@ -1,5 +1,3 @@
-# Lyra Content Agent
-
 **Tongston AI Engineering Assessment** — Full-stack AI-assisted content creation platform.
 
 ## Quick Start
