@@ -21,6 +21,10 @@ export type ScoredRecommendation = {
   type: string;
   score: number;
   reason: string;
+  url: string;
+  size: number;
+  tags: string[];
+  uploadDate: string;
 };
 
 const extractKeywords = (text: string): string[] => {
@@ -57,6 +61,10 @@ export const scoreFileAgainstContent = (
     type: file.type,
     score,
     reason: `Matches ${matchedKeywords.join(', ')}`,
+    url: file.url,
+    size: file.size,
+    tags: file.tags,
+    uploadDate: (file.createdAt ?? new Date()).toISOString(),
   };
 };
 
