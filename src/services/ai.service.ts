@@ -4,11 +4,16 @@ import { callWithFallback, parseAiJson } from './modelRouter.service';
 import { fallbackGeneratePost, fallbackSuggestHashtags } from './deterministicTemplates';
 
 export type Tone = 'professional' | 'casual' | 'excited';
+export type PostFormat = 'short' | 'long' | 'bullet';
+
+export type Variation = { label: string; content: string };
 
 export type GeneratePostResult = {
-  primary: string;
-  variations: string[];
-  hashtags: string[];
+  content: string;
+  variations: Variation[];
+  improvements: string[];
+  relatedIdeas: string[];
+  fallbackUsed: boolean;
 };
 
 export type SuggestHashtagsResult = {
@@ -17,30 +22,88 @@ export type SuggestHashtagsResult = {
 
 // ── Prompt Builders ──────────────────────────────────────────
 
+const FORMAT_INSTRUCTIONS: Record<PostFormat, string> = {
+  short: 'Keep the post concise — 2-3 short paragraphs max. Punchy, scannable.',
+  long: 'Write a detailed, in-depth post. 4-6 paragraphs with rich context and nuance.',
+  bullet: 'Use bullet points or numbered lists. Clear, skimmable formatting.',
+};
+
 export const buildGeneratePostPrompt = (
-  prompt: string,
+  topic: string,
   tone: Tone,
-  variations: number,
+  format: PostFormat,
 ): string => {
   return [
-    `You are a social media content specialist. Generate a social media post based on the user's prompt.`,
+    `You are a social media content specialist. Generate a post about the given topic.`,
     ``,
+    `Topic: "${topic}"`,
     `Tone: ${tone}`,
-    `Number of variations: ${variations}`,
-    ``,
-    `User prompt: "${prompt}"`,
+    `Format: ${format}`,
+    `Format instruction: ${FORMAT_INSTRUCTIONS[format]}`,
     ``,
     `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
     `{`,
-    `  "primary": "The main post text",`,
-    `  "variations": ["variation 1", "variation 2"],`,
-    `  "hashtags": ["#Hashtag1", "#Hashtag2"]`,
+    `  "content": "The main post content",`,
+    `  "variations": [`,
+    `    { "label": "Short", "content": "..." },`,
+    `    { "label": "Professional", "content": "..." },`,
+    `    { "label": "Engaging", "content": "..." }`,
+    `  ],`,
+    `  "improvements": ["Suggestion to make the post stronger"],`,
+    `  "relatedIdeas": ["Another angle or topic to explore"]`,
     `}`,
     ``,
     `Rules:`,
-    `- "primary" must be a compelling post matching the requested tone.`,
-    `- "variations" must contain exactly ${variations} alternative versions.`,
-    `- "hashtags" must contain 3-5 relevant hashtags, each starting with #.`,
+    `- "content" must be a compelling post matching the requested tone and format.`,
+    `- "variations" must contain exactly 3 alternatives with different approaches (labels: "Short", "Professional", "Engaging").`,
+    `- "improvements" must contain 2-3 actionable suggestions to strengthen the post.`,
+    `- "relatedIdeas" must contain 2-3 related angles or follow-up topics.`,
+    `- Every field must be present. Do not include any text outside the JSON object.`,
+  ].join('\n');
+};
+
+export const buildRegeneratePrompt = (
+  previousContent: string,
+  topic: string,
+  tone: Tone,
+  format: PostFormat,
+  additionalInstructions?: string,
+): string => {
+  const instructions = additionalInstructions
+    ? `\n\nAdditional user instructions: "${additionalInstructions}"`
+    : '';
+
+  return [
+    `You are a social media content specialist. Regenerate the following post with improvements based on the instructions.`,
+    ``,
+    `Topic: "${topic}"`,
+    `Tone: ${tone}`,
+    `Format: ${format}`,
+    `Format instruction: ${FORMAT_INSTRUCTIONS[format]}`,
+    ``,
+    `Previous version:`,
+    `"""`,
+    previousContent,
+    `"""`,
+    instructions,
+    ``,
+    `Respond ONLY with valid JSON in this exact structure, no markdown fences, no explanation:`,
+    `{`,
+    `  "content": "The improved main post content",`,
+    `  "variations": [`,
+    `    { "label": "Short", "content": "..." },`,
+    `    { "label": "Professional", "content": "..." },`,
+    `    { "label": "Engaging", "content": "..." }`,
+    `  ],`,
+    `  "improvements": ["Suggestion to make the post stronger"],`,
+    `  "relatedIdeas": ["Another angle or topic to explore"]`,
+    `}`,
+    ``,
+    `Rules:`,
+    `- "content" must retain the core message but incorporate the requested improvements.`,
+    `- "variations" must contain exactly 3 alternatives with different approaches (labels: "Short", "Professional", "Engaging").`,
+    `- "improvements" must contain 2-3 actionable suggestions to strengthen the post.`,
+    `- "relatedIdeas" must contain 2-3 related angles or follow-up topics.`,
     `- Every field must be present. Do not include any text outside the JSON object.`,
   ].join('\n');
 };
@@ -93,15 +156,44 @@ export const buildMediaRecommendationPrompt = (
   ].join('\n');
 };
 
+// ── Validation ───────────────────────────────────────────────
+
+const VALID_VARIATION_LABELS = ['Short', 'Professional', 'Engaging'];
+
+const isValidVariations = (variations: unknown): variations is Variation[] => {
+  if (!Array.isArray(variations) || variations.length === 0) return false;
+  return variations.every(
+    (v) =>
+      v &&
+      typeof v === 'object' &&
+      typeof (v as Variation).label === 'string' &&
+      typeof (v as Variation).content === 'string' &&
+      VALID_VARIATION_LABELS.includes((v as Variation).label),
+  );
+};
+
+const isValidGeneratePostResult = (data: unknown): data is GeneratePostResult => {
+  if (!data || typeof data !== 'object') return false;
+
+  const d = data as Record<string, unknown>;
+
+  if (typeof d.content !== 'string' || !d.content.trim()) return false;
+  if (!isValidVariations(d.variations)) return false;
+
+  if (!Array.isArray(d.improvements)) return false;
+  if (!Array.isArray(d.relatedIdeas)) return false;
+
+  return true;
+};
+
 // ── Public Service Methods ───────────────────────────────────
 
 export const generatePost = async (
-  prompt: string,
+  topic: string,
   tone: Tone = 'professional',
-  variations: number = 3,
+  format: PostFormat = 'short',
 ): Promise<GeneratePostResult> => {
-  const cappedVariations = Math.min(Math.max(variations, 1), 5);
-  const systemPrompt = buildGeneratePostPrompt(prompt, tone, cappedVariations);
+  const systemPrompt = buildGeneratePostPrompt(topic, tone, format);
 
   const modelResult = await callWithFallback(systemPrompt);
 
@@ -109,24 +201,69 @@ export const generatePost = async (
     try {
       const parsed = parseAiJson<GeneratePostResult>(modelResult.content);
 
-      if (!parsed.primary || !Array.isArray(parsed.variations) || !Array.isArray(parsed.hashtags)) {
+      if (!isValidGeneratePostResult(parsed)) {
         logger.error('AI response missing expected fields, falling back to template', { parsed });
-        return fallbackGeneratePost(prompt, tone, cappedVariations);
+        return fallbackGeneratePost(topic, tone, format);
       }
 
       return {
-        primary: parsed.primary,
-        variations: parsed.variations.slice(0, cappedVariations),
-        hashtags: parsed.hashtags,
+        content: parsed.content,
+        variations: parsed.variations,
+        improvements: parsed.improvements,
+        relatedIdeas: parsed.relatedIdeas,
+        fallbackUsed: modelResult.fallbackUsed,
       };
     } catch {
       logger.warn('Failed to parse AI response, using deterministic template');
-      return fallbackGeneratePost(prompt, tone, cappedVariations);
+      return fallbackGeneratePost(topic, tone, format);
     }
   }
 
   logger.warn('AI providers unavailable, returning deterministic fallback template');
-  return fallbackGeneratePost(prompt, tone, cappedVariations);
+  return fallbackGeneratePost(topic, tone, format);
+};
+
+export const regeneratePost = async (
+  previousContent: string,
+  topic: string,
+  tone: Tone = 'professional',
+  format: PostFormat = 'short',
+  additionalInstructions?: string,
+): Promise<GeneratePostResult> => {
+  const systemPrompt = buildRegeneratePrompt(
+    previousContent,
+    topic,
+    tone,
+    format,
+    additionalInstructions,
+  );
+
+  const modelResult = await callWithFallback(systemPrompt);
+
+  if (modelResult) {
+    try {
+      const parsed = parseAiJson<GeneratePostResult>(modelResult.content);
+
+      if (!isValidGeneratePostResult(parsed)) {
+        logger.error('AI response missing expected fields, falling back to template', { parsed });
+        return fallbackGeneratePost(topic, tone, format);
+      }
+
+      return {
+        content: parsed.content,
+        variations: parsed.variations,
+        improvements: parsed.improvements,
+        relatedIdeas: parsed.relatedIdeas,
+        fallbackUsed: modelResult.fallbackUsed,
+      };
+    } catch {
+      logger.warn('Failed to parse AI response, using deterministic template');
+      return fallbackGeneratePost(topic, tone, format);
+    }
+  }
+
+  logger.warn('AI providers unavailable, returning deterministic fallback template');
+  return fallbackGeneratePost(topic, tone, format);
 };
 
 export const suggestHashtags = async (postContent: string): Promise<SuggestHashtagsResult> => {

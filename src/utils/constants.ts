@@ -14,6 +14,7 @@ export const POST_DRAFT_STATUSES = ['draft', 'accepted', 'discarded'] as const;
 
 export const AI_REQUEST_TYPES = [
   'generate',
+  'regenerate',
   'hashtags',
   'recommend',
   'improve',

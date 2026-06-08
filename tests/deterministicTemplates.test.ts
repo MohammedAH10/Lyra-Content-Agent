@@ -3,42 +3,72 @@ import { describe, expect, it } from 'vitest';
 import { fallbackGeneratePost, fallbackSuggestHashtags } from '../src/services/deterministicTemplates';
 
 describe('fallbackGeneratePost', () => {
-  it('returns a structured fallback with primary, variations, and hashtags', () => {
-    const result = fallbackGeneratePost('Test prompt', 'professional', 3);
+  it('returns a structured fallback with all expected fields', () => {
+    const result = fallbackGeneratePost('Test topic', 'professional', 'short');
 
-    expect(result).toHaveProperty('primary');
+    expect(result).toHaveProperty('content');
     expect(result).toHaveProperty('variations');
-    expect(result).toHaveProperty('hashtags');
-    expect(typeof result.primary).toBe('string');
+    expect(result).toHaveProperty('improvements');
+    expect(result).toHaveProperty('relatedIdeas');
+    expect(result).toHaveProperty('fallbackUsed');
+    expect(typeof result.content).toBe('string');
     expect(Array.isArray(result.variations)).toBe(true);
-    expect(Array.isArray(result.hashtags)).toBe(true);
+    expect(Array.isArray(result.improvements)).toBe(true);
+    expect(Array.isArray(result.relatedIdeas)).toBe(true);
+    expect(result.fallbackUsed).toBe(true);
   });
 
-  it('capped variations at 5', () => {
-    const result = fallbackGeneratePost('Test', 'casual', 10);
+  it('returns exactly 3 variations with labels Short, Professional, Engaging', () => {
+    const result = fallbackGeneratePost('Test', 'casual', 'long');
 
-    expect(result.variations.length).toBe(5);
+    expect(result.variations.length).toBe(3);
+    const labels = result.variations.map((v) => v.label);
+    expect(labels).toContain('Short');
+    expect(labels).toContain('Professional');
+    expect(labels).toContain('Engaging');
   });
 
-  it('has minimum 1 variation', () => {
-    const result = fallbackGeneratePost('Test', 'excited', 0);
+  it('each variation has label and content', () => {
+    const result = fallbackGeneratePost('Test', 'excited', 'bullet');
 
-    expect(result.variations.length).toBe(1);
+    result.variations.forEach((v) => {
+      expect(typeof v.label).toBe('string');
+      expect(typeof v.content).toBe('string');
+      expect(v.label.length).toBeGreaterThan(0);
+      expect(v.content.length).toBeGreaterThan(0);
+    });
   });
 
-  it('primary contains prompt and tone', () => {
-    const result = fallbackGeneratePost('My custom prompt', 'excited', 2);
+  it('content contains topic and tone', () => {
+    const result = fallbackGeneratePost('My custom topic', 'excited', 'short');
 
-    expect(result.primary).toContain('My custom prompt');
-    expect(result.primary).toContain('excited');
-    expect(result.primary).toContain('[Draft');
+    expect(result.content).toContain('My custom topic');
+    expect(result.content).toContain('excited');
+    expect(result.content).toContain('[Draft');
   });
 
-  it('hashtags include fallback defaults', () => {
-    const result = fallbackGeneratePost('Test', 'professional', 1);
+  it('improvements contains 2 suggestions', () => {
+    const result = fallbackGeneratePost('Test', 'professional', 'long');
 
-    expect(result.hashtags).toContain('#ContentDraft');
-    expect(result.hashtags).toContain('#AIUnavailable');
+    expect(result.improvements.length).toBe(2);
+    expect(result.improvements[0]).toContain('AI generation unavailable');
+  });
+
+  it('relatedIdeas contains 2 ideas', () => {
+    const result = fallbackGeneratePost('Test', 'professional', 'bullet');
+
+    expect(result.relatedIdeas.length).toBe(2);
+    expect(result.relatedIdeas[0]).toContain('Test');
+  });
+
+  it('accepts all formats without error', () => {
+    const short = fallbackGeneratePost('Test', 'professional', 'short');
+    const long = fallbackGeneratePost('Test', 'professional', 'long');
+    const bullet = fallbackGeneratePost('Test', 'professional', 'bullet');
+
+    expect(short.content).toContain('short');
+    expect(long.content).toContain('long');
+    expect(bullet.content).toContain('bullet');
   });
 });
 

@@ -1,36 +1,39 @@
-import { GeneratePostResult, SuggestHashtagsResult } from './ai.service';
+import { GeneratePostResult, PostFormat, SuggestHashtagsResult, Tone } from './ai.service';
 
 const FALLBACK_HASHTAGS = ['#ContentDraft', '#AIUnavailable', '#DraftMode'];
 
 export const fallbackGeneratePost = (
-  prompt: string,
-  tone: string,
-  variations: number,
+  topic: string,
+  tone: Tone | string,
+  format: PostFormat | string,
 ): GeneratePostResult => {
-  const cappedVariations = Math.min(Math.max(variations, 1), 5);
-
-  const primary = [
+  const content = [
     `[Draft — AI generation unavailable]`,
     ``,
-    `${prompt}`,
+    `${topic}`,
     ``,
-    `Tone: ${tone}`,
+    `Tone: ${tone} | Format: ${format}`,
     `---`,
     `This is a placeholder draft. AI generation is temporarily unavailable.`,
     `You can edit this content directly or try again later.`,
   ].join('\n');
 
-  const variationsList: string[] = [];
-  for (let i = 1; i <= cappedVariations; i++) {
-    variationsList.push(
-      `Variation ${i}: ${prompt} [Tone: ${tone}, Draft: AI unavailable]`,
-    );
-  }
-
   return {
-    primary,
-    variations: variationsList,
-    hashtags: [...FALLBACK_HASHTAGS],
+    content,
+    variations: [
+      { label: 'Short', content: `[Short version] ${topic} [Tone: ${tone}]` },
+      { label: 'Professional', content: `[Professional version] ${topic} [Tone: ${tone}]` },
+      { label: 'Engaging', content: `[Engaging version] ${topic} [Tone: ${tone}]` },
+    ],
+    improvements: [
+      'AI generation unavailable — no suggestions available.',
+      'Try again later to get actionable improvement ideas.',
+    ],
+    relatedIdeas: [
+      `${topic} — explore related perspectives`,
+      `${topic} — consider audience-specific angles`,
+    ],
+    fallbackUsed: true,
   };
 };
 

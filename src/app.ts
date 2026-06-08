@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 
 import { errorHandler } from './middleware/errorHandler';
 import aiRoutes from './routes/ai.routes';
+import draftsRoutes from './routes/drafts.routes';
 import filesRoutes from './routes/files.routes';
 import workflowRoutes from './routes/workflow.routes';
 import logger from './utils/logger';
@@ -28,6 +29,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.use('/files', filesRoutes);
 app.use('/ai', aiRoutes);
+app.use('/posts', draftsRoutes);
 app.use('/', workflowRoutes);
 
 app.use(errorHandler);

@@ -1,6 +1,10 @@
 import { RequestHandler } from 'express';
 
-import { generatePost as generatePostService, suggestHashtags as suggestHashtagsService } from '../services/ai.service';
+import {
+  generatePost as generatePostService,
+  regeneratePost as regeneratePostService,
+  suggestHashtags as suggestHashtagsService,
+} from '../services/ai.service';
 import {
   MediaRecommendation,
   recommendMediaForPost,
@@ -53,16 +57,45 @@ export const recommendMedia: RequestHandler = async (req, res, next) => {
 
 export const generatePost: RequestHandler = async (req, res, next) => {
   try {
-    const { prompt, tone, variations } = req.body;
+    const { topic, tone, format, userId } = req.body;
 
-    const result = await generatePostService(prompt, tone, variations);
+    const result = await generatePostService(topic, tone, format);
 
     res.status(200).json({
       success: true,
       data: {
-        primary: result.primary,
+        content: result.content,
         variations: result.variations,
-        hashtags: result.hashtags,
+        improvements: result.improvements,
+        relatedIdeas: result.relatedIdeas,
+        fallbackUsed: result.fallbackUsed,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const regeneratePost: RequestHandler = async (req, res, next) => {
+  try {
+    const { previousContent, topic, tone, format, additionalInstructions } = req.body;
+
+    const result = await regeneratePostService(
+      previousContent,
+      topic,
+      tone,
+      format,
+      additionalInstructions,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        content: result.content,
+        variations: result.variations,
+        improvements: result.improvements,
+        relatedIdeas: result.relatedIdeas,
+        fallbackUsed: result.fallbackUsed,
       },
     });
   } catch (error) {
