@@ -19,11 +19,11 @@ export default function Sidebar() {
     <aside className="h-screen w-64 fixed left-0 top-0 hidden lg:flex flex-col bg-glass-surface backdrop-blur-[24px] border-r border-glass-border shadow-2xl shadow-deep-obsidian z-50 py-stack-sm">
       <div className="px-6 mb-10 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-violet to-neon-cyan flex items-center justify-center neon-glow-violet">
-          <span className="text-white font-bold text-lg">A</span>
+          <span className="text-white font-bold text-lg">T</span>
         </div>
         <div>
-          <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">Amiri AI</h1>
-          <p className="text-[10px] uppercase tracking-widest text-neon-cyan/80 mt-1">Cerebral-Neon Engine</p>
+          <h1 className="font-sora text-headline-lg font-black text-neon-violet leading-none">T-World AI</h1>
+          <p className="text-[10px] uppercase tracking-widest text-neon-cyan/80 mt-1">Tongston's AI Assessment</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-4">
