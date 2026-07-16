@@ -1,6 +1,6 @@
 # Amiri Content Agent
 
-**Tongston AI Engineering Assessment** — Full-stack AI-assisted content creation platform.
+Full-stack AI-assisted content creation platform.
 
 ## Quick Start
 
